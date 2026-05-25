@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hybrid-arch"
+version = "0.0.1"
+description = "Diagnostic toolkit for adaptive LLM inference research"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.0",
+    "transformers>=4.40",
+    "datasets>=2.14",
+    "numpy>=1.24",
+    "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "pyright>=1.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["hybrid_arch*"]   # explicit so adding src/scripts/ can't confuse discovery
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.pyright]
+pythonVersion = "3.10"
+include = ["src", "tests"]
+typeCheckingMode = "basic"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

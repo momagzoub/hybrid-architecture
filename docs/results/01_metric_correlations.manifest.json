@@ -1,0 +1,11 @@
+{
+  "model_name": "EleutherAI/pythia-160m",
+  "model_revision": "step143000",
+  "dataset": "Salesforce/wikitext / wikitext-103-raw-v1 / train (streamed)",
+  "n_tokens": 256,
+  "k_parallel": 4,
+  "seed": 0,
+  "slice_sha256": "26d082fc2a33069d549cb5712bf8ce328dedc63283009785789d6a13e3a73a9b",
+  "git_commit": null,
+  "output_csv": "docs/results/01_metric_correlations.csv"
+}

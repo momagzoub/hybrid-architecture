@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+
+# Virtual envs
+.venv/
+venv/
+env/
+.python-version
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+*.nbconvert.ipynb
+
+# Project data — never commit these. Leading slash = top-level only,
+# so `docs/results/` (published artefacts) remains tracked.
+/data/
+/results/
+*.pt
+*.pth
+*.safetensors
+*.bin
+
+# HuggingFace cache
+.cache/
+~/.cache/huggingface/
+
+# Logs & traces
+*.log
+runs/
+wandb/
+mlruns/
+
+# OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Cowork / Claude Code per-machine settings
+.claude/settings.local.json
