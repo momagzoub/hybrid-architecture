@@ -45,19 +45,28 @@ Hybrid Architecture/
 │   ├── attention.py               ← extract_attention (forward-hook, NaN-free)
 │   ├── metrics.py                 ← five per-token metrics
 │   └── viz.py                     ← entropy_heatmap, attention_track, STYLE dict
-└── tests/                         ← 53 tests, all passing
+└── tests/                         ← 63 tests, all passing
     ├── conftest.py                ← shared pythia fixture
-    ├── test_attention.py
-    ├── test_metrics_{logits,attention,parallel}.py
-    ├── test_smoke.py
-    └── test_viz.py
+    ├── test_attention.py          ← 5 tests
+    ├── test_checkpoints.py        ← 7 tests
+    ├── test_metrics_attention.py  ← 13 tests
+    ├── test_metrics_logits.py     ← 14 tests
+    ├── test_metrics_parallel.py   ← 13 tests
+    ├── test_smoke.py              ← 2 tests
+    └── test_viz.py                ← 9 tests
 ```
 
-What does *not* exist yet:
+What's already in place that this doc previously listed as TO BUILD:
 
-- `src/hybrid_arch/checkpoints.py` — the cross-checkpoint helper. Phase 2 builds it.
-- A batched, fast version of `parallel_prediction_agreement`. See §5.
-- Any of the cross-checkpoint experiments, plots, or the atlas.
+- ✅ `src/hybrid_arch/checkpoints.py` exists with `list_checkpoints()` and `load_pythia(size, step)`. Canonical step list is log-spaced: `[0, 1, 8, 128, 1000, 4000, 16000, 32000, 64000, 96000, 128000, 143000]`.
+- ✅ `parallel_prediction_agreement` already has a `batched=True` flag (default). The performance trap mentioned in §5 was anticipated and fixed before Phase 2 began.
+- ✅ `notebooks/04_emergence_atlas.ipynb` exists as an empty scaffold, waiting to be filled.
+
+What still does *not* exist:
+
+- The per-(layer, head) attention metrics primitive (Phase 1 only shipped aggregate versions; see §4 for why this matters).
+- The metric-battery cache layer (`src/hybrid_arch/cache.py` or equivalent). Without this, Phase 2's compute budget overflows.
+- Any of the cross-checkpoint experiments, plots, or the atlas writeup.
 - `docs/results/figures/`.
 - `docs/results/02_emergence_atlas.md`.
 
@@ -76,62 +85,89 @@ Deliverable: `docs/results/02_emergence_atlas.md` with 5-6 publication-quality p
 
 ## 4. Critical inheritance from Phase 1
 
-These three pieces of context must stay live across Phase 2:
+These four pieces of context must stay live across Phase 2:
 
 1. **The Pythia attention NaN bug is solved, but only via the forward-hook path.** All attention-based metrics must go through `hybrid_arch.attention.extract_attention`, never `output_attentions=True`. The deep-layer overflow has been verified on every layer 0-11 of step143000.
 2. **Position-0 (and early-position) entropy is structural.** Causal masking forces row 0 of attention to be a delta, so its entropy is 0 by construction, not by model behavior. For aggregate metrics in Phase 2, decide explicitly whether to drop these positions, log them separately, or report them — and document the choice in the atlas writeup. The Phase 1 `03_metric_zoo.ipynb` drops position 0 from the correlation, as one example.
 3. **The j=0 column of `parallel_prediction_agreement` is always True.** It's a structural invariant (TF and AR see identical context), not a property of the model. If you report a single agreement rate per position, restrict the mean to `j > 0` or document that you're including the structurally-True column.
+4. **Aggregate attention metrics correlate at \|r\| < 0.11 with parallel-safety.** This is the puzzle that defines Phase 2's most important experiment. The Phase 1 correlation analysis (256-token WikiText slice, Pythia-160M @ step143000) found that *averaging attention entropy/concentration across all 12 layers × 12 heads washes out any signal*. The thesis-relevant hypothesis: **specific (layer, head) pairs are highly predictive of parallel-safety, but the mean across them is noise.** The signature analysis (Step 5 below) tests this directly — and is the experiment whose result determines whether Phase 3's probe has anything to predict. If aggregate attention is really noise and per-head attention is also noise, the thesis is in trouble; budget time to dig into this carefully.
 
-## 5. The big performance problem and how to fix it
+## 5. Performance — already fixed, plus the next bottleneck
 
-`parallel_prediction_agreement` in Phase 1 is `O(n_positions × k)` sequential CPU forward passes. On 256 tokens × k=4 that's ~3-5 min on a T4. On Phase 2 scale (5000 tokens × 36 model loads × 3 datasets) the same implementation would take ~70 hours, blowing the compute budget by an order of magnitude.
+The previous version of this handoff flagged `parallel_prediction_agreement` as a major performance problem (sequential rollouts would blow the budget at Phase 2 scale). **That's been fixed**: the function now defaults to `batched=True` and runs in `O(k)` batched forward passes instead of `O(n_positions × k)` sequential ones. `tests/test_metrics_parallel.py` includes a batched-vs-sequential equivalence test.
 
-**Fix before launching the big experiment.** The batched version:
-
-- The j=0 column is structural — skip the model call, just copy TF predictions.
-- For j ≥ 1, batch all `n_positions` rollouts into one forward pass per step: build a padded `[n_positions, max_len]` tensor, run one model call, take argmax at each row's last unpadded position. With padding-aware attention masks, this collapses `n_positions × (k-1)` calls into `(k-1)` batched calls. Roughly **100× speedup** on long prompts.
-- Keep `parallel_prediction_agreement` as the user-facing function; add a `batched=True` flag or a separate `parallel_prediction_agreement_batched` if the API divergence is too much.
-
-The tests in `tests/test_metrics_parallel.py` already pin down the correct behavior — make the batched version pass them.
+The new bottleneck at Phase 2 scale is **model loading and metric-battery caching**, not parallel-agreement compute. With 36 model loads × 3 datasets = 108 metric-battery runs and each load taking 30-60s on its own, *not caching the metric outputs is what would blow the budget*. Step 1 below builds that cache layer; it is non-negotiable.
 
 ## 6. Suggested sequence of work
 
-Each step ends in something runnable. Don't move on until the prior step is green.
+Each step ends in something runnable. The first two steps from the previous version of this handoff are already done (`checkpoints.py` and batched `parallel_prediction_agreement`); the sequence below picks up from there. Don't move on until the prior step is green.
 
-**Step 1 — Checkpoint loader (~1 day)**
+**Live progress (this session):**
 
-- File: `src/hybrid_arch/checkpoints.py`.
-- Function: `load_pythia(size, step) → (model, tokenizer)`. Pins by revision string `stepNNNN`. Caches to disk so re-runs are free.
-- Function: `list_checkpoints(size)` → list of canonical step values to evaluate (e.g., `[0, 1000, 4000, 16000, 32000, 64000, 96000, 128000, 143000]`). Document why these were chosen.
-- Test: load one early and one late checkpoint, assert a meaningful difference on a sanity prompt (e.g., entropy at step 0 ≫ entropy at step 143000).
+- [x] Step 1 — `src/hybrid_arch/cache.py` + 10 cache tests (74 → 81 tests passing)
+- [x] Step 2 — per-(layer, head) attention already preserved by Phase 1 primitives; added `aggregate_attention_*` helpers + 7 explicit equivalence tests
+- [x] Step 3 — smoke verified on Pythia-70m and 410m @ step143000, 32 tokens, cache hit < 1ms
+- [ ] Step 4 — emergence curve sweep in progress (256-token slice, not 2K — see note below)
+- [ ] Steps 5-9 — pending
 
-**Step 2 — Batched parallel_prediction_agreement (~half day)**
+**Slice-size deviation from the original plan.** The handoff calls for a 2K-token WikiText slice, but the batched `parallel_prediction_agreement` at n_positions ≈ 2K would create activations of ~25 GB per layer on Pythia-410M (the kernel is one big `[n_positions, n_positions+j]` forward pass). That exceeds laptop RAM and is over the T4's 16 GB. Stepped down to 256 tokens to match the Phase 1 slice; statistical power per cell is 252 × (k-1) = 756 binary observations, ample for the fraction-≥-0.9 statistic. Document this in the atlas; revisit at 1K on T4 if the laptop sweep finishes with budget headroom.
 
-- Replace or extend the function in `metrics.py`. Existing tests must still pass.
-- Add a Pythia integration test on a 100-token prompt: the batched and sequential versions must agree element-wise.
-- Benchmark: report the speedup factor in the test or a comment.
+**Step 1 — Metric-battery cache layer (~3-4 hours)**
 
-**Step 3 — Metric-battery harness (~1 day)**
+- File: `src/hybrid_arch/cache.py`.
+- Function: `metric_battery(model_size, step, dataset_name, slice_hash, *, force_recompute=False) -> dict[str, Tensor]`. Loads cached outputs from disk if present; otherwise loads the model via `load_pythia`, runs the full metric battery, writes outputs, returns.
+- Storage layout: `data/cache/<dataset>/<size>/<step>.npz` (named-array format keeps each metric retrievable independently). Add `data/cache/` to `.gitignore` if not already excluded by the `data/` rule.
+- Tests: cache hit returns identical tensor to cache miss; `force_recompute=True` recomputes; missing cache directory is created automatically; manifest sidecar JSON records model revision, dataset slice hash, tokenizer hash.
+- This step is **the single most important piece of Phase 2 engineering**. If caching is slow or has correctness bugs, every subsequent step pays the cost.
 
-- Script (under `src/scripts/run_metric_battery.py` — make the `scripts/` dir): given `(size, step, dataset_slice_path)`, run all metrics, save per-token CSVs to `data/metric_battery/<size>/<step>/<dataset>.csv` plus a `manifest.json`. Skip work that already has cached outputs.
+**Step 2 — Per-(layer, head) attention metrics (~2-3 hours)**
 
-**Step 4 — Run the battery (~3-5 hours of T4 time)**
+- Phase 1's `attention_entropy` and `attention_concentration` return shapes that aggregate across layers/heads (returning `[batch, seq]`). The signature analysis in Step 5 needs them at the full `[layers, heads, batch, seq]` granularity.
+- Either add a `aggregate=False` flag to the existing functions, or create new `attention_entropy_per_head(...)` / `attention_concentration_per_head(...)` functions. Choose whichever doesn't break existing tests.
+- Tests: shape correctness; `mean(per_head, dim=(0,1)) ≈ aggregate` to within float tolerance; no NaN in deep layers (already guaranteed by `extract_attention`).
+- This is the **missing primitive that lets the signature analysis access the signal that aggregating washes out**.
 
-- 3 sizes × ~12 checkpoints × 3 datasets = ~108 runs. Each run produces one CSV. With caching, re-runs are free.
-- After this step, ~108 CSV files exist on disk and are recoverable from manifest.
+**Step 3 — Smoke test the cache + per-head metrics at scale (~1 hour + compute)**
 
-**Step 5 — Aggregation and plots (~2-3 days)**
+- Quick verification: load Pythia-70m at step143000, run the full per-token + per-(layer, head) metric battery on a 32-token slice, cache it, re-load from cache, confirm identical results. Then do the same for 410m to verify the cache layout handles the larger tensors.
+- No new code; just exercise Steps 1-2 end-to-end.
 
-- A separate notebook `notebooks/04_emergence_atlas.ipynb` reads from cached CSVs, generates the four headline plots (emergence curve, signature accuracy, token-type breakdown, domain shift).
-- Use the `STYLE` dict in `viz.py`. Add new plot helpers (e.g., `emergence_curve`) to `viz.py` if reused.
+**Step 4 — Experiment 1: emergence curve (~half a day + compute)**
 
-**Step 6 — Writeup (~1-2 days)**
+- Run the metric battery across 12 canonical checkpoints × 3 model sizes (70m, 160m, 410m) on a 2K-token WikiText-103 slice (deterministic seed, hash documented in manifest). Use Step 1's cache.
+- Notebook: fill in `notebooks/04_emergence_atlas.ipynb`.
+- Output: per-checkpoint table of `parallel_safety_fraction` (fraction of positions where `mean(agreement[:, j=1:k]) >= 0.9`). Plot as 3 lines (one per model size) against training step on a log-x axis. Save the table to `docs/results/02_emergence_curve.csv` with manifest sidecar.
 
-- `docs/results/02_emergence_atlas.md` — the headline document. One paragraph per plot, with the plot embedded. Include captions you'd be willing to staple to a workshop submission.
+**Step 5 — Experiment 2: signature analysis (~1 day + compute)**
 
-**Step 7 — Closeout**
+- For each (model_size, checkpoint), train a logistic regression: features = per-token logit-side metrics (entropy, top1) + per-(layer, head) attention metrics (12×12 = 144 features for Pythia-160M); target = binary `parallel_safety` label.
+- Track classifier AUROC across checkpoints. Plot AUROC vs training step per model size.
+- Extract feature importances from the final-checkpoint classifier. Identify the top-10 most predictive (layer, head) pairs. Plot as a small bar chart. *This is the experiment that answers the Phase 1 puzzle (§4 item 4).*
+- Save: per-checkpoint AUROC in `docs/results/03_signature_auroc.csv`; top features in `docs/results/04_top_features.csv`.
+- Use scikit-learn (`LogisticRegression` with `class_weight="balanced"`); don't overthink the modeling. The methodological pitfalls to watch for are documented in the Belinkov 2022 probing paper — read it before this step.
 
-- Update `PROJECT_PLAN.md` §Phase 2 status. Update `CLAUDE.md` §8. Write `PHASE_3_HANDOFF.md`.
+**Step 6 — Experiment 3: token-type breakdown (~half a day)**
+
+- Categorize tokens using either spaCy POS tags or a regex/closed-list classifier (function words via closed list; content words via POS; numbers via regex). Keep it simple.
+- For each token type, compute `parallel_safety_fraction` per checkpoint. Plot as a small-multiples figure (one panel per token type).
+- No new compute. Reads from Step 4's cache.
+
+**Step 7 — Experiment 4: domain shift (~half a day + compute)**
+
+- Re-run the metric battery on MBPP (code) and a 2K-token slice of GSM8K (math). To stay within budget, do this only at the *final checkpoint* per model size (3 sizes × 2 new datasets = 6 new runs).
+- Output: a 3×3 heatmap (model_size × domain → mean parallel-safety fraction), plus a per-domain emergence curve overlay if the time budget allows.
+
+**Step 8 — Writeup (~1-2 days)**
+
+- File: `docs/results/02_emergence_atlas.md`. Lead with the emergence-curve figure (it's the headline); then signature analysis, token-type, domain. Each section is one figure + one paragraph of interpretation. Pull figures into `docs/results/figures/` with consistent filenames.
+- Audience: an inference researcher who hasn't read CLAUDE.md. They should understand the contribution in five minutes.
+
+**Step 9 — Closeout (~30 min)**
+
+- Update `PROJECT_PLAN.md` §Phase 2 status with a one-paragraph outcome summary (mirror the Phase 1 outcome paragraph).
+- Update README.md hero section: pin the emergence-curve figure.
+- Bump `__version__` to `"0.2.0"`.
+- Write `PHASE_3_HANDOFF.md` for the probe-and-router work.
 
 ## 7. Compute discipline (reminder)
 
@@ -160,6 +196,8 @@ Full list in `docs/reading_list.md`.
 
 Open a fresh chat with Claude Code, point at this file, and say:
 
-> Read `PHASE_2_HANDOFF.md` and `CLAUDE.md`. Then start with §6 Step 1 — build `src/hybrid_arch/checkpoints.py` with `load_pythia` and `list_checkpoints`, including the sanity-check test. Run continuously through the steps; only stop for genuinely risky or ambiguous decisions.
+> Read `PHASE_2_HANDOFF.md`, `CLAUDE.md`, and `PROJECT_PLAN.md` §Phase 2. Note that `src/hybrid_arch/checkpoints.py` and the batched `parallel_prediction_agreement` are already shipped — *do not rebuild them*. Start with §6 Step 1: build `src/hybrid_arch/cache.py` with the `metric_battery()` cache function and its tests. Run continuously through the steps in order; only stop if you hit something genuinely risky or ambiguous, or if a step's compute estimate climbs above 4 hours (the CLAUDE.md §7 ceiling) — in those cases, flag for review before proceeding.
 
-End of handoff. When Phase 2 is done, write a `PHASE_3_HANDOFF.md` in the same shape.
+The "do not rebuild what already exists" sentence is load-bearing — the previous version of this handoff (before Phase 1 closed) described Steps 1 and 2 of the old sequence as work to do; that work is now done. Skipping it is the difference between Phase 2 finishing in 2-3 weeks and looping for a month on already-solved problems.
+
+End of handoff. When Phase 2 is done, write a `PHASE_3_HANDOFF.md` in the same shape, anchoring on the signature-analysis output (Step 5) as the artifact that Phase 3's probe consumes.

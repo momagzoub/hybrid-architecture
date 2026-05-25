@@ -10,8 +10,10 @@ dividing by `math.log(2)` if needed.
 Public API:
     next_token_entropy(logits)        -> Tensor
     top1_probability(logits)          -> Tensor
-    attention_entropy(attn_weights)   -> Tensor
-    attention_concentration(attn_weights, top_k) -> Tensor
+    attention_entropy(attn_weights)   -> Tensor                   # per-head [L,B,H,S]
+    attention_concentration(attn_weights, top_k) -> Tensor        # per-head [K,L,B,H,S]
+    aggregate_attention_entropy(per_head)       -> Tensor          # [B,S]
+    aggregate_attention_concentration(per_head) -> Tensor          # [K,B,S]
     parallel_prediction_agreement(model, input_ids, k) -> Tensor
 """
 
@@ -128,6 +130,43 @@ def attention_concentration(
     # For each requested k, take cumsum[..., k-1]; clamp k to seq_len.
     per_k = [cumsum[..., min(k, seq_len) - 1] for k in top_k]
     return torch.stack(per_k, dim=0)
+
+
+def aggregate_attention_entropy(per_head: Tensor) -> Tensor:
+    """Average a per-(layer, head) attention-entropy tensor across (L, H).
+
+    Phase 1 stored only this aggregate and saw |r| < 0.11 against parallel-safety.
+    Phase 2's signature analysis uses the full per-head tensor instead. This
+    helper exists so callers who need the aggregate can compute it without
+    re-deriving the axis convention.
+
+    Args:
+        per_head: `[L, B, H, S]` from `attention_entropy`.
+
+    Returns:
+        `[B, S]` — the mean over layers and heads.
+    """
+    if per_head.ndim != 4:
+        raise ValueError(
+            f"expected [L, B, H, S], got shape {tuple(per_head.shape)}"
+        )
+    return per_head.mean(dim=(0, 2))
+
+
+def aggregate_attention_concentration(per_head: Tensor) -> Tensor:
+    """Average a per-(layer, head) concentration tensor across (L, H).
+
+    Args:
+        per_head: `[K, L, B, H, S]` from `attention_concentration`.
+
+    Returns:
+        `[K, B, S]` — the mean over layers and heads.
+    """
+    if per_head.ndim != 5:
+        raise ValueError(
+            f"expected [K, L, B, H, S], got shape {tuple(per_head.shape)}"
+        )
+    return per_head.mean(dim=(1, 3))
 
 
 @torch.no_grad()

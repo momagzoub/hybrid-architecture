@@ -13,8 +13,11 @@ Public API (implemented across Phase 1):
 __version__ = "0.0.1"
 
 from hybrid_arch.attention import extract_attention
+from hybrid_arch.cache import metric_battery, slice_hash
 from hybrid_arch.checkpoints import list_checkpoints, load_pythia
 from hybrid_arch.metrics import (
+    aggregate_attention_concentration,
+    aggregate_attention_entropy,
     attention_concentration,
     attention_entropy,
     next_token_entropy,
@@ -30,10 +33,14 @@ __all__ = [
     "top1_probability",
     "attention_entropy",
     "attention_concentration",
+    "aggregate_attention_entropy",
+    "aggregate_attention_concentration",
     "parallel_prediction_agreement",
     "entropy_heatmap",
     "attention_track",
     "list_checkpoints",
     "load_pythia",
+    "metric_battery",
+    "slice_hash",
 ]
 
