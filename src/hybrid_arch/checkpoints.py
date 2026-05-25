@@ -75,7 +75,7 @@ def load_pythia(
 
     tok = AutoTokenizer.from_pretrained(model_name, revision=revision)
     model = AutoModelForCausalLM.from_pretrained(
-        model_name, revision=revision, torch_dtype=dtype
+        model_name, revision=revision, dtype=dtype
     )
     model.eval()
     return model, tok
