@@ -125,6 +125,19 @@ def _get_dataset_slice(
 # ---------------------------------------------------------------------------
 
 
+def _resolve_device(device: str) -> torch.device:
+    """Resolve --device flag to an actual torch.device.
+
+    "auto" picks CUDA if available, else CPU. Explicit "cuda" raises if no
+    GPU is present so we fail loud instead of silently running on CPU.
+    """
+    if device == "auto":
+        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("--device cuda requested but torch.cuda.is_available() is False")
+    return torch.device(device)
+
+
 def run_cell(
     size: str,
     step: int,
@@ -134,6 +147,7 @@ def run_cell(
     out_root: Path,
     data_root: Path,
     *,
+    device: torch.device | None = None,
     verbose: bool = True,
 ) -> Path:
     """Run the metric battery for one (size, step, dataset) combination.
@@ -142,6 +156,9 @@ def run_cell(
     already exists for this combination, returns the cached path without
     re-running.
     """
+    if device is None:
+        device = _resolve_device("auto")
+
     out_dir = out_root / size / f"step{step}" / dataset_name
     out_dir.mkdir(parents=True, exist_ok=True)
     csv_path = out_dir / "metrics.csv"
@@ -160,11 +177,12 @@ def run_cell(
 
     t0 = time.perf_counter()
     model, tok = load_pythia(size, step)
-    log(f"  loaded pythia-{size} @ step{step} in {time.perf_counter()-t0:.1f}s")
+    model = model.to(device)
+    log(f"  loaded pythia-{size} @ step{step} on {device} in {time.perf_counter()-t0:.1f}s")
 
     input_ids = _get_dataset_slice(
         dataset_name, tok, n_tokens, data_root / "dataset_slices"
-    )
+    ).to(device)
 
     t0 = time.perf_counter()
     with torch.no_grad():
@@ -245,6 +263,7 @@ def run_sweep(
     out_root: Path,
     data_root: Path,
     *,
+    device: torch.device | None = None,
     steps: list[int] | None = None,
 ) -> None:
     """Enumerate sizes × steps × datasets and run each cell.
@@ -252,6 +271,8 @@ def run_sweep(
     Cached cells are skipped. Failures on individual cells are caught and
     logged so one bad checkpoint doesn't abort the whole run.
     """
+    if device is None:
+        device = _resolve_device("auto")
     if steps is None:
         steps = list_checkpoints()
     total = len(sizes) * len(steps) * len(datasets_)
@@ -263,10 +284,18 @@ def run_sweep(
                 i += 1
                 print(f"[{i}/{total}] {size} step{step} {ds}")
                 try:
-                    run_cell(size, step, ds, n_tokens, k, out_root, data_root)
+                    run_cell(
+                        size, step, ds, n_tokens, k, out_root, data_root,
+                        device=device,
+                    )
                 except Exception as e:
                     print(f"  FAILED: {type(e).__name__}: {e}")
                     failures.append((size, step, ds, str(e)))
+                # Release GPU memory between cells; the caching allocator
+                # will keep it reserved otherwise, which compounds across
+                # 36 model loads in the full sweep.
+                if device.type == "cuda":
+                    torch.cuda.empty_cache()
     print(f"\nDone. {total - len(failures)}/{total} cells succeeded.")
     if failures:
         print("Failures:")
@@ -307,10 +336,28 @@ def main() -> None:
     ap.add_argument("--k", type=int, default=4)
     ap.add_argument("--out-root", default="data/metric_battery")
     ap.add_argument("--data-root", default="data")
+    ap.add_argument(
+        "--device",
+        default="auto",
+        help="auto (default), cpu, cuda, or cuda:N. 'auto' picks CUDA if available.",
+    )
     args = ap.parse_args()
 
     out_root = Path(args.out_root)
     data_root = Path(args.data_root)
+    device = _resolve_device(args.device)
+
+    # Loud one-line banner so the user can confirm at a glance that the GPU
+    # is actually being used (the script silently fell back to CPU before
+    # device handling was added).
+    if device.type == "cuda":
+        gpu_name = torch.cuda.get_device_name(device)
+        free, total = torch.cuda.mem_get_info(device)
+        print(
+            f"device: {device} ({gpu_name}, {free / 1e9:.1f}/{total / 1e9:.1f} GB free)"
+        )
+    else:
+        print(f"device: {device} (no GPU; expect ~30-100x slower)")
 
     if args.sweep:
         run_sweep(
@@ -320,6 +367,7 @@ def main() -> None:
             args.k,
             out_root,
             data_root,
+            device=device,
             steps=args.steps,
         )
     else:
@@ -330,7 +378,7 @@ def main() -> None:
             )
         run_cell(
             args.size, args.step, args.dataset, args.n_tokens, args.k,
-            out_root, data_root,
+            out_root, data_root, device=device,
         )
 
 
