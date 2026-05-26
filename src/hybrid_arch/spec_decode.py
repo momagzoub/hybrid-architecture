@@ -49,6 +49,7 @@ class SpecDecodeTrace:
     n_drafted: int = 0
     n_accepted: int = 0
     rejection_step_positions: list[int] = field(default_factory=list)
+    committed_tokens: list[int] = field(default_factory=list)
 
     @property
     def accept_rate(self) -> float:
@@ -157,6 +158,7 @@ def spec_decode_capture(
     prefix = prompt_ids.clone()
     n_accepted_total = 0
     n_drafted_total = 0
+    committed: list[int] = []
     for step in range(n_steps):
         drafted, ents, top1, hs = _drafter_step(drafter, prefix, draft_k)
         # Extend prefix with drafted tokens, then ask the target what it would
@@ -191,15 +193,21 @@ def spec_decode_capture(
         # Commit: accepted prefix + target's correction at first reject (or all k
         # if none rejected). The "+1" extra token from a fully-accepted draft
         # is the bonus target token; we ignore it for simplicity, taking only
-        # the accepted draft tokens through.
+        # the accepted draft tokens through. Every committed token equals the
+        # target's greedy argmax given the committed prefix, so the committed
+        # stream is a prefix of pure-target greedy decoding (the spec-decode
+        # exactness guarantee — asserted in tests and the Phase 4 bench).
         if first_reject == draft_k:
+            step_committed = drafted.tolist()
             new_prefix = extended
         else:
-            committed = drafted[:first_reject].tolist() + [int(target_preds[first_reject].item())]
+            correction = int(target_preds[first_reject].item())
+            step_committed = drafted[:first_reject].tolist() + [correction]
             new_prefix = torch.cat([
                 prefix,
-                torch.tensor([committed], dtype=prefix.dtype, device=prefix.device),
+                torch.tensor([step_committed], dtype=prefix.dtype, device=prefix.device),
             ], dim=1)
+        committed.extend(step_committed)
         prefix = new_prefix
 
         n_drafted_total += draft_k
@@ -220,4 +228,5 @@ def spec_decode_capture(
         n_drafted=n_drafted_total,
         n_accepted=n_accepted_total,
         rejection_step_positions=rejection_positions,
+        committed_tokens=committed,
     )

@@ -79,41 +79,21 @@ def greedy_target_decode(target, prompt: torch.Tensor, n_new: int) -> tuple[torc
     return torch.tensor(out, dtype=torch.long), time.perf_counter() - t0
 
 
-def reconstruct_decoded(prompt: torch.Tensor, trace) -> torch.Tensor:
-    """Reconstruct the tokens that spec-decode actually emitted.
+def committed_divergence(trace, ref_tokens: torch.Tensor) -> float:
+    """Fraction of the spec-decode *committed* stream that differs from the
+    pure-target greedy reference over the overlapping prefix.
 
-    Speculative decoding commits the drafted token if the target's argmax at
-    the same position matches; otherwise it overrides with the target's pick.
-    `trace.target_token[i]` holds the target's argmax for drafted position i.
+    Greedy speculative decoding is mathematically exact: every committed token
+    is the target's greedy argmax given the committed prefix, so this must be
+    0.0. We compute it as a validation of the implementation, not as a
+    quality knob — a nonzero value would mean the accept/reject bookkeeping
+    is broken.
     """
-    out: list[int] = []
-    for i in range(trace.n_drafted):
-        out.append(int(trace.target_token[i].item())
-                   if not bool(trace.accept[i].item())
-                   else int(trace.drafter_token[i].item()))
-    return torch.tensor(out, dtype=torch.long)
-
-
-def reconstruct_hybrid(prompt: torch.Tensor, result) -> torch.Tensor:
-    """Hybrid output sequence: when the router keeps a token, use the drafter's
-    pick; otherwise use the target's pick (the verifier always runs in this
-    benchmark, so the target's argmax at the position is available)."""
-    out: list[int] = []
-    for i in range(result.n):
-        kept = bool(result.router_decision[i].item())
-        if kept:
-            out.append(int(result.spec_trace.drafter_token[i].item()))
-        else:
-            out.append(int(result.spec_trace.target_token[i].item()))
-    return torch.tensor(out, dtype=torch.long)
-
-
-def divergence(a: torch.Tensor, b: torch.Tensor) -> float:
-    """Fraction of positions where two same-length sequences disagree."""
-    n = min(a.numel(), b.numel())
+    committed = torch.tensor(trace.committed_tokens, dtype=torch.long)
+    n = min(committed.numel(), ref_tokens.numel())
     if n == 0:
         return 0.0
-    return float((a[:n] != b[:n]).float().mean())
+    return float((committed[:n] != ref_tokens[:n]).float().mean())
 
 
 def ensure_slice(name: str, tok) -> torch.Tensor:
@@ -176,7 +156,7 @@ def main() -> None:
             "domain": domain, "mode": "pure_target",
             "n_tokens": n_new, "wall_s": ref_secs, "tokens_per_sec": ref_tps,
             "accept_rate": 1.0, "router_keep_rate": 0.0, "false_keep_rate": 0.0,
-            "divergence_vs_pure_target": 0.0,
+            "committed_divergence": 0.0,
         })
 
         # -- greedy spec-decode --
@@ -185,40 +165,45 @@ def main() -> None:
         spec_trace = spec_decode_capture(target, drafter, prompt,
                                          n_steps=N_STEPS, draft_k=DRAFT_K)
         spec_secs = time.perf_counter() - t0
-        spec_tokens = reconstruct_decoded(prompt, spec_trace)
-        spec_div = divergence(spec_tokens, ref_tokens)
-        spec_tps = spec_trace.n_drafted / spec_secs
+        # Exactness validation: the committed stream must equal pure-target greedy.
+        spec_div = committed_divergence(spec_trace, ref_tokens)
+        n_committed = len(spec_trace.committed_tokens)
+        spec_tps = n_committed / spec_secs
         print(f"{spec_secs:6.1f}s  {spec_tps:5.2f} tok/s  "
-              f"accept={spec_trace.accept_rate:.3f}  div={spec_div:.3f}")
+              f"accept={spec_trace.accept_rate:.3f}  committed={n_committed}  "
+              f"exact_div={spec_div:.3f}")
         bench_rows.append({
             "domain": domain, "mode": "spec_decode",
-            "n_tokens": spec_trace.n_drafted, "wall_s": spec_secs,
+            "n_tokens": n_committed, "wall_s": spec_secs,
             "tokens_per_sec": spec_tps,
             "accept_rate": spec_trace.accept_rate,
             "router_keep_rate": 0.0, "false_keep_rate": 0.0,
-            "divergence_vs_pure_target": spec_div,
+            "committed_divergence": spec_div,
         })
 
         # -- hybrid decode (default router) --
+        # The hybrid decoder is a counterfactual analysis: it always runs the
+        # verifier (so we know the truth) and records what the router WOULD
+        # have committed. Its quality cost is `false_keep_rate` — the fraction
+        # of router-kept positions the verifier would have rejected. There is
+        # no single committed stream to diff, so committed_divergence is NaN.
         print("  mode=hybrid        ", end="", flush=True)
         router = threshold_router("one_minus_top1", threshold=ROUTER_THRESHOLD)
         t0 = time.perf_counter()
         result = hybrid_decode(target, drafter, prompt,
                                router=router, n_steps=N_STEPS, draft_k=DRAFT_K)
         hyb_secs = time.perf_counter() - t0
-        hyb_tokens = reconstruct_hybrid(prompt, result)
-        hyb_div = divergence(hyb_tokens, ref_tokens)
         hyb_tps = result.n / hyb_secs
         print(f"{hyb_secs:6.1f}s  {hyb_tps:5.2f} tok/s  "
               f"keep={result.router_keep_rate:.3f}  "
-              f"false_keep={result.false_keep_rate:.3f}  div={hyb_div:.3f}")
+              f"false_keep={result.false_keep_rate:.3f}")
         bench_rows.append({
             "domain": domain, "mode": "hybrid",
             "n_tokens": result.n, "wall_s": hyb_secs, "tokens_per_sec": hyb_tps,
             "accept_rate": result.spec_trace.accept_rate,
             "router_keep_rate": result.router_keep_rate,
             "false_keep_rate": result.false_keep_rate,
-            "divergence_vs_pure_target": hyb_div,
+            "committed_divergence": float("nan"),
         })
 
         # histogram data: one_minus_top1 split by accept/reject
@@ -256,22 +241,33 @@ def main() -> None:
     }, indent=2, sort_keys=True))
 
     # ----- throughput bar chart -----
+    # Only `pure_target` and `spec_decode` are honest, comparable throughput
+    # numbers (committed tokens / wall-second). The hybrid harness ALWAYS runs
+    # the verifier — it's a routing-counterfactual measurement, not a faster
+    # decoder — so plotting its tok/s would mislead. Hybrid's contribution is
+    # the routing histogram below, not throughput.
     FIGURE_DIR.mkdir(parents=True, exist_ok=True)
     fig, ax = plt.subplots(figsize=(8, 5), dpi=120)
-    modes = ("pure_target", "spec_decode", "hybrid")
-    width = 0.25
+    modes = ("pure_target", "spec_decode")
+    width = 0.35
     x = np.arange(len(DOMAINS))
     for i, mode in enumerate(modes):
         tps = [next(r["tokens_per_sec"] for r in bench_rows
                     if r["domain"] == d and r["mode"] == mode) for d in DOMAINS]
         ax.bar(x + i * width, tps, width, label=mode)
-    ax.set_xticks(x + width)
+    for j, d in enumerate(DOMAINS):
+        acc = next(r["accept_rate"] for r in bench_rows
+                   if r["domain"] == d and r["mode"] == "spec_decode")
+        peak = max(r["tokens_per_sec"] for r in bench_rows
+                   if r["domain"] == d and r["mode"] in modes)
+        ax.text(x[j] + width, peak + 0.1, f"accept={acc:.2f}", ha="center", fontsize=8)
+    ax.set_xticks(x + width / 2)
     ax.set_xticklabels(DOMAINS)
-    ax.set_ylabel("Tokens per wall-second (CPU)")
+    ax.set_ylabel("Committed tokens per wall-second (CPU)")
     ax.set_title(
-        f"Hybrid decoder throughput vs baselines\n"
-        f"target Pythia-{TARGET_SIZE} / drafter Pythia-{DRAFTER_SIZE}, "
-        f"router=`1-top1 < {ROUTER_THRESHOLD}`"
+        f"Real throughput: pure-target vs greedy spec-decode\n"
+        f"target Pythia-{TARGET_SIZE} / drafter Pythia-{DRAFTER_SIZE} "
+        f"(spec-decode wins iff acceptance is high)"
     )
     ax.grid(True, alpha=0.3, axis="y")
     ax.legend()

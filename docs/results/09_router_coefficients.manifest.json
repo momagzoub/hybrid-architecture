@@ -1,0 +1,20 @@
+{
+  "accept_rate": 0.9443359375,
+  "csv": "docs/results/09_router_coefficients.csv",
+  "draft_k": 4,
+  "drafter": "EleutherAI/pythia-160m",
+  "experiment": "Phase 4 Step 2 \u2014 fitted router on real rejection labels",
+  "figure": "docs/results/figures/09_router_roc.png",
+  "model": "sklearn LogisticRegression(class_weight=balanced, C=1, liblinear)",
+  "n_accepted": 967,
+  "n_drafted": 1024,
+  "n_steps": 256,
+  "phase3_unfitted_one_minus_top1_test_auroc": 0.9846371538306045,
+  "probe_checkpoint": "src/hybrid_arch/probe_checkpoints/160m_step143000_L9.pt",
+  "probe_layer": 9,
+  "prompt_tokens": 96,
+  "slice_sha256": "91d9df26eb3c3649ce446aa6b3533124a2d83beb1dddede0fac44a21bcd1dcf9",
+  "split": "70/30 stratified, random_state=0",
+  "step": 143000,
+  "target": "EleutherAI/pythia-1b"
+}

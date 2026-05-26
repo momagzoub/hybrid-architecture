@@ -38,10 +38,12 @@ The library is the artifact. The atlas is the proof it does something useful.
 | **Code is 3.9× more parallel-safe than prose.** On Pythia-410m: WikiText psf = 0.115, GSM8K = 0.194, MBPP = **0.452**. | [domain shift](docs/results/figures/06_domain_shift_heatmap.png) |
 | **A 50 k-parameter MLP probe on Pythia-410m's L12 hidden state reaches AUROC 0.857** — middle layer wins, edges out the linear-on-attention baseline. | [probe by depth](docs/results/figures/07_probe_layer_depth.png) |
 | **But the probe does not predict real drafter-rejection.** In a Pythia-1b / 160m greedy spec-decode benchmark, `1 − top1` predicts rejection at AUROC 0.88; the offline probe lands at 0.60 (chance). Honest null. | [rejection ROC](docs/results/figures/08_drafter_rejection_roc.png) |
+| **A hybrid decoder routes 27-72% of tokens through the cheap path at ≤3.3% quality cost** — routing fraction tracks domain predictability (prose < code < math). Even *fitted* on real labels, the probe adds nothing over `1 − top1` (0.985). | [throughput](docs/results/figures/10_hybrid_throughput.png) |
 
 Atlases:
 - [Phase 2 emergence atlas](docs/results/02_emergence_atlas.md)
 - [Phase 3 probes + spec-decode benchmark](docs/results/03_probes.md)
+- [Phase 4 hybrid decoder](docs/results/04_hybrid_decoder.md)
 
 ## Install
 
@@ -76,6 +78,8 @@ python src/scripts/phase2_token_types.py           # ~2s
 python src/scripts/phase2_domain_shift.py          # ~5 min from scratch
 python src/scripts/phase3_layer_depth_sweep.py     # ~2 min, trains 42 probes
 python src/scripts/phase3_drafter_rejection.py     # ~15 min on CPU, needs Pythia-1b
+python src/scripts/phase4_fitted_router.py         # ~7 min, fits the router ablations
+python src/scripts/phase4_hybrid_bench.py          # ~5 min, the hybrid-decoder bench
 ```
 
 Every plot and CSV in `docs/results/` is regenerable from these four scripts and
@@ -109,8 +113,8 @@ cached pipeline anyone can run on Pythia checkpoints in minutes.
 
 ## Status
 
-Phases 2 and 3 complete (2026-05-25). Phase 4 (hybrid decoder demo) next —
-see [`PHASE_4_HANDOFF.md`](PHASE_4_HANDOFF.md). Roadmap in
+Phases 2-4 complete (2026-05-25). Phase 5 (polish & publish) next —
+see [`PHASE_5_HANDOFF.md`](PHASE_5_HANDOFF.md). Roadmap in
 [`PROJECT_PLAN.md`](PROJECT_PLAN.md).
 
 ## License

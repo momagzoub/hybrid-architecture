@@ -1,0 +1,25 @@
+{
+  "csv": "docs/results/10_hybrid_decoder_bench.csv",
+  "domains": [
+    "wikitext",
+    "mbpp",
+    "gsm8k"
+  ],
+  "draft_k": 4,
+  "drafter": "EleutherAI/pythia-160m",
+  "experiment": "Phase 4 Step 3 \u2014 hybrid-decoder measurement harness",
+  "figures": [
+    "docs/results/figures/10_hybrid_throughput.png",
+    "docs/results/figures/10_hybrid_routing_hist.png"
+  ],
+  "n_steps": 16,
+  "prompt_tokens": 96,
+  "router": "threshold_router('one_minus_top1', 0.2)",
+  "slice_sha256": {
+    "gsm8k": "444d4b0923ad24670872e86051886ed2dc3e44977e50d8423f6ed680dfa9d9c0",
+    "mbpp": "ff844c4448adc64c1d730a5b7e9969a9dfaf5bcf98d06c9e522b25e1c4fa5ef8",
+    "wikitext": "91d9df26eb3c3649ce446aa6b3533124a2d83beb1dddede0fac44a21bcd1dcf9"
+  },
+  "step": 143000,
+  "target": "EleutherAI/pythia-1b"
+}

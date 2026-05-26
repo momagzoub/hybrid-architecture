@@ -64,3 +64,28 @@ def test_draft_k_one(pythia_model_and_tokenizer):
     trace = spec_decode_capture(model, model, prompt, n_steps=3, draft_k=1)
     assert trace.n_drafted == 3
     assert trace.accept.all()
+
+
+def test_committed_tokens_match_pure_greedy(pythia_model_and_tokenizer):
+    """The exactness guarantee: the committed stream equals pure greedy decoding.
+
+    Every committed token is the (target) model's greedy argmax given the
+    committed prefix, so running plain greedy generation from the same prompt
+    must reproduce the committed stream token-for-token. This is the invariant
+    the Phase 4 bench validates as `committed_divergence == 0`.
+    """
+    model, tok = pythia_model_and_tokenizer
+    prompt = tok("The quick brown fox", return_tensors="pt").input_ids
+    trace = spec_decode_capture(model, model, prompt, n_steps=4, draft_k=3)
+    committed = trace.committed_tokens
+    assert len(committed) > 0
+
+    # Plain greedy reference of the same length.
+    ctx = prompt.clone()
+    ref: list[int] = []
+    with torch.no_grad():
+        for _ in range(len(committed)):
+            nxt = int(model(input_ids=ctx).logits[0, -1].argmax().item())
+            ref.append(nxt)
+            ctx = torch.cat([ctx, torch.tensor([[nxt]], dtype=ctx.dtype)], dim=1)
+    assert committed == ref, "committed stream must equal pure greedy decoding"

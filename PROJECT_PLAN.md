@@ -146,7 +146,9 @@ You can hand the probe to someone and they can use it in 5 lines of code.
 
 ---
 
-## Phase 4 — Hybrid decoder demo (weeks 16-18)
+## Phase 4 — Hybrid decoder demo (weeks 16-18) — **COMPLETE (2026-05-25)**
+
+**Outcome.** Shipped in [`docs/results/04_hybrid_decoder.md`](./docs/results/04_hybrid_decoder.md). `hybrid_arch.hybrid.hybrid_decode` wraps greedy spec-decode with a pluggable router; `hybrid_arch.spec_decode` is the capture testbed (with a tested exactness guarantee: committed stream == pure-target greedy). Two findings: (1) a router *fitted on real rejection labels* does not beat the unfitted `1 − top1` baseline (both 0.985 test AUROC), and the probe adds nothing even as a fitted feature — confirming Phase 3 under the strongest test. (2) The hybrid decoder routes 27% (WikiText) / 47% (MBPP) / 72% (GSM8K) of tokens through the cheap path with false-keep rate ≤ 0.033 — routing fraction tracks domain predictability. Honest throughput note: spec-decode only wins in committed-tokens/sec when acceptance is high (GSM8K yes, WikiText no), and real speedups need the engineering list in the writeup.
 
 **Goal:** show the probes inside a working decoder. Not to beat SOTA — to demonstrate the use case.
 

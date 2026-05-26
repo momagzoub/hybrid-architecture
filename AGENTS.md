@@ -115,8 +115,8 @@ hybrid-architecture/
 | 1 — Measure | ✅ closed (2026-05-25) | Five metrics, NaN-free attention. |
 | 2 — Patterns | ✅ closed (2026-05-25) | [Atlas](./docs/results/02_emergence_atlas.md). AUROC 0.85 on 410m; code 3.9× more parallel-safe than prose. |
 | 3 — Probes & router | ✅ closed (2026-05-25) | [Probes](./docs/results/03_probes.md). 410m L12 probe AUROC 0.857; offline probe does NOT transfer to spec-decode rejection (1−top1 wins at 0.88). |
-| 4 — Hybrid decoder demo | ⏭ next | See [`PHASE_4_HANDOFF.md`](./PHASE_4_HANDOFF.md). Natural parallel work — router, measurement harness, "what we'd need to scale" writeup are independent. |
-| 5 — Polish & publish | pending | |
+| 4 — Hybrid decoder demo | ✅ closed (2026-05-25) | [Hybrid decoder](./docs/results/04_hybrid_decoder.md). Router fitted on real labels doesn't beat `1−top1` (0.985); hybrid routes 27-72% of tokens at ≤3.3% quality cost. |
+| 5 — Polish & publish | ⏭ next | See [`PHASE_5_HANDOFF.md`](./PHASE_5_HANDOFF.md). |
 
 ---
 

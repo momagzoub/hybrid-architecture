@@ -10,7 +10,7 @@ Public API (implemented across Phase 1):
   viz        — entropy_heatmap(), attention_track()
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 from hybrid_arch.attention import extract_attention, extract_hidden_states
 from hybrid_arch.cache import metric_battery, slice_hash
