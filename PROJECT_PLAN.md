@@ -1,6 +1,6 @@
 # PROJECT_PLAN.md — Hybrid Architecture
 
-> The 20-week roadmap. Read [`CLAUDE.md`](./CLAUDE.md) first for context.
+> The 20-week roadmap. Read [`AGENTS.md`](./AGENTS.md) first for context.
 
 This plan assumes **~10-15 hours/week** over 5 months. Each phase ends with a tangible deliverable you can show to someone. If a phase slips, *cut scope, do not slip the deliverable*. The deliverables compound: if Phase 3 doesn't ship, Phase 4 has nothing to build on.
 
@@ -184,7 +184,7 @@ You can run a one-liner and get a colored printout of a routed generation.
 | Pythia checkpoints don't show interesting emergence patterns | Medium | Pivot to "domain shift on final checkpoint only" — still a clean contribution |
 | Probes don't predict EAGLE rejections better than entropy baseline | Medium-high | That's still a result. "Simple baselines work" is publishable; frame as such |
 | Free Colab runs out / gets throttled | Medium | Caching discipline (Phase 1) makes this annoying but not fatal |
-| Scope creeps into "rebuild EAGLE on small models" | Medium | CLAUDE.md §10 explicitly warns Claude to push back |
+| Scope creeps into "rebuild EAGLE on small models" | Medium | AGENTS.md §8 warns any assistant to push back |
 | 5 months turns into 8 months | High | The phases are gated by deliverables; don't proceed without the prior deliverable |
 
 ---

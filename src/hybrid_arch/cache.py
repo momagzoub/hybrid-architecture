@@ -32,7 +32,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from hybrid_arch.attention import extract_attention
+from hybrid_arch.attention import extract_attention, extract_hidden_states
 from hybrid_arch.metrics import (
     attention_concentration,
     attention_entropy,
@@ -104,8 +104,15 @@ def _compute_battery(
     *,
     k_parallel: int,
     top_k: tuple[int, ...],
+    store_hidden_states: bool = True,
 ) -> dict[str, Tensor]:
-    """Run every metric in the battery on (`model`, `input_ids`). All tensors fp32/bool, on CPU."""
+    """Run every metric in the battery on (`model`, `input_ids`). All tensors fp32/bool, on CPU.
+
+    Hidden states are stored in fp16 to halve the per-cell file size — they
+    are consumer-side inputs to a tiny MLP probe (Phase 3), where fp32 is
+    overkill. Set `store_hidden_states=False` to opt out for Phase 2-style
+    callers that only need the metrics.
+    """
     model.eval()
     with torch.no_grad():
         logits = model(input_ids=input_ids).logits  # [B, S, V]
@@ -118,10 +125,15 @@ def _compute_battery(
         attn_conc_ph = attention_concentration(attn, top_k=top_k).cpu()  # [K, L, B, H, S]
         del attn
 
+        if store_hidden_states:
+            hs = extract_hidden_states(model, input_ids).to(torch.float16)  # [L, B, S, H]
+        else:
+            hs = None
+
         pa = parallel_prediction_agreement(model, input_ids, k=k_parallel)
         pa = pa.cpu()
 
-    return {
+    out: dict[str, Tensor] = {
         "next_token_entropy": nte,
         "top1_probability": top1,
         "attention_entropy_per_head": attn_ent_ph,
@@ -129,17 +141,21 @@ def _compute_battery(
         "parallel_agreement": pa,
         "input_ids": input_ids.detach().cpu(),
     }
+    if hs is not None:
+        out["hidden_states_per_layer"] = hs
+    return out
 
 
 def _to_torch(arrays: dict[str, np.ndarray]) -> dict[str, Tensor]:
     out: dict[str, Tensor] = {}
     for key, arr in arrays.items():
-        # np.savez wraps scalars in 0-d arrays; np.load returns them as such.
-        # All our entries are at least 1-d, so we just convert.
         if arr.dtype == np.bool_:
             out[key] = torch.from_numpy(arr.copy())
         elif np.issubdtype(arr.dtype, np.integer):
             out[key] = torch.from_numpy(arr.astype(np.int64))
+        elif arr.dtype == np.float16:
+            # Preserve fp16 (hidden states) — consumers can upcast as needed.
+            out[key] = torch.from_numpy(arr.copy())
         else:
             out[key] = torch.from_numpy(arr.astype(np.float32))
     return out
@@ -152,6 +168,8 @@ def _to_numpy(tensors: dict[str, Tensor]) -> dict[str, np.ndarray]:
             out[key] = t.cpu().numpy()
         elif t.dtype in (torch.int32, torch.int64, torch.long):
             out[key] = t.cpu().to(torch.int64).numpy()
+        elif t.dtype == torch.float16:
+            out[key] = t.cpu().numpy()  # preserve fp16 on disk
         else:
             out[key] = t.cpu().to(torch.float32).numpy()
     return out
@@ -169,6 +187,7 @@ def metric_battery(
     cache_dir: Path | str | None = None,
     model: torch.nn.Module | None = None,
     tokenizer_name: str | None = None,
+    store_hidden_states: bool = True,
 ) -> dict[str, Tensor]:
     """Load or compute the per-token metric battery for one (size, step, slice).
 
@@ -221,7 +240,8 @@ def metric_battery(
         model, _tok = load_pythia(model_size, step)  # type: ignore[arg-type]
 
     tensors = _compute_battery(
-        model, input_ids, k_parallel=k_parallel, top_k=top_k
+        model, input_ids, k_parallel=k_parallel, top_k=top_k,
+        store_hidden_states=store_hidden_states,
     )
 
     _save_npz(npz_path, _to_numpy(tensors))

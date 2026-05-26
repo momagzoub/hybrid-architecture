@@ -1,7 +1,7 @@
 """Plotting helpers for the metric library.
 
 One global `STYLE` dict, set once and shared across functions, so every
-plot in the project has a consistent look. Per CLAUDE.md §5: "settle on
+plot in the project has a consistent look. Per AGENTS.md §4: "settle on
 a color palette now and never change it."
 
 Public API:

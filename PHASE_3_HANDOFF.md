@@ -1,22 +1,20 @@
 # Phase 3 Handoff — Hybrid Architecture
 
-Paste-this-to-Claude-Code document. Self-contained: assume the reader is a fresh
-Claude Code session that has not seen Phase 1 or Phase 2. Date authored:
-2026-05-25, at the close of Phase 2.
+Self-contained brief for the engineer (or assistant) picking up Phase 3.
+Date authored: 2026-05-25, at the close of Phase 2.
 
 ## 0. How to use this document
 
-You are a Claude Code session joining the Hybrid Architecture project. Your job
-is to execute Phase 3 — the **Probes & Router** phase. Phase 2 produced the
-empirical claim that specific (layer, head) attention features predict
-"parallel-safety" with AUROC ~0.85 on Pythia-410m using a linear model. Phase 3
-turns that observation into a *callable* artifact: a small, pretrained probe an
-inference engineer can plug into a drafter as a pre-verification step.
+Phase 2 produced the empirical claim that specific (layer, head) attention
+features predict "parallel-safety" with AUROC ~0.85 on Pythia-410m using a
+linear model. Phase 3 turns that observation into a *callable* artifact: a
+small, pretrained probe an inference engineer can plug into a drafter as a
+pre-verification step.
 
 Read these before writing any code:
 
 1. [`README.md`](./README.md) — the public pitch.
-2. [`CLAUDE.md`](./CLAUDE.md) — project conventions, SOTA boundary, compute discipline.
+2. [`AGENTS.md`](./AGENTS.md) — project conventions, SOTA boundary, compute discipline.
 3. [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) §Phase 3 — canonical scope.
 4. [`docs/results/02_emergence_atlas.md`](./docs/results/02_emergence_atlas.md) — Phase 2 results in narrative form. **The probe consumes the artifacts described here.**
 5. Skim `src/hybrid_arch/{cache,metrics,attention}.py` and `src/scripts/phase2_signature_analysis.py` — the API and the script the probe will displace.
@@ -25,7 +23,7 @@ Read these before writing any code:
 
 ```
 hybrid-architecture/
-├── README.md, CLAUDE.md, PROJECT_PLAN.md
+├── README.md, AGENTS.md, PROJECT_PLAN.md
 ├── PHASE_3_HANDOFF.md             ← this file
 ├── pyproject.toml                 ← installable as `pip install -e ".[dev]"`
 ├── docs/results/
@@ -210,7 +208,7 @@ hidden states. The probe takes a hidden state as input.
 
 ## 8. Where to start
 
-Open a fresh chat with Claude Code, point it at this file, and say:
+Brief for the engineer or assistant kicking off Phase 3:
 
 > Read `PHASE_3_HANDOFF.md`, `docs/results/02_emergence_atlas.md`, and
 > `PROJECT_PLAN.md` §Phase 3. The Phase 2 cache, metric library, and 256-token

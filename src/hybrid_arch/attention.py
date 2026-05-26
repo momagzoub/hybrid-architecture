@@ -12,7 +12,8 @@ own weights, then compute attention scores and softmax in fp32 with the
 causal mask applied. Numerically clean for all layers.
 
 Public API:
-    extract_attention(model, input_ids) -> Tensor[L, B, H, S, S]
+    extract_attention(model, input_ids)       -> Tensor[L, B, H, S, S]
+    extract_hidden_states(model, input_ids)   -> Tensor[L, B, S, H]
 """
 
 from __future__ import annotations
@@ -168,3 +169,67 @@ def extract_attention(
         per_layer.append(attn)
 
     return torch.stack(per_layer, dim=0)  # [L, B, H, S, S]
+
+
+def _find_gptneox_layers(model: torch.nn.Module) -> list[torch.nn.Module]:
+    """Return all `GPTNeoXLayer` submodules in document order."""
+    layers: list[torch.nn.Module] = []
+    for module in model.modules():
+        if type(module).__name__ == "GPTNeoXLayer":
+            layers.append(module)
+    return layers
+
+
+@torch.no_grad()
+def extract_hidden_states(
+    model: torch.nn.Module,
+    input_ids: Tensor,
+) -> Tensor:
+    """Capture per-layer hidden states (the residual stream).
+
+    Hooks each `GPTNeoXLayer`'s *output* so we get the post-block residual
+    stream at every depth — the input that downstream probes consume.
+    Equivalent to `model(output_hidden_states=True).hidden_states[1:]` but
+    keeps the API in one place and remains insensitive to upstream wrapper
+    changes.
+
+    Args:
+        model: A GPTNeoX-family causal LM.
+        input_ids: Long tensor `[batch, seq]`.
+
+    Returns:
+        Tensor of shape `[num_layers, batch, seq, hidden_dim]` in fp32, on CPU.
+
+    Raises:
+        RuntimeError: if the model contains no `GPTNeoXLayer` blocks.
+    """
+    layers = _find_gptneox_layers(model)
+    if not layers:
+        raise RuntimeError(
+            f"No GPTNeoXLayer blocks found on {type(model).__name__}. "
+            "extract_hidden_states only supports GPTNeoX-family models."
+        )
+
+    captured: list[Tensor] = [None] * len(layers)  # type: ignore[list-item]
+
+    def make_hook(idx: int):
+        def hook(_module, _args, output):
+            # GPTNeoXLayer.forward returns either a plain Tensor or a tuple
+            # depending on transformers version; the residual hidden state
+            # is always the first element.
+            hidden = output[0] if isinstance(output, tuple) else output
+            captured[idx] = hidden.detach().to(torch.float32).cpu()
+        return hook
+
+    handles = [layer.register_forward_hook(make_hook(i)) for i, layer in enumerate(layers)]
+    was_training = model.training
+    try:
+        model.eval()
+        model(input_ids=input_ids)
+    finally:
+        for h in handles:
+            h.remove()
+        if was_training:
+            model.train()
+
+    return torch.stack(captured, dim=0)  # [L, B, S, H]

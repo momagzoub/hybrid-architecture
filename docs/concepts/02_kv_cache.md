@@ -26,7 +26,7 @@ Corrected mental model: the cache is a moving target, not a fixed cost. Every st
 **My first-pass answer.** No idea.
 
 **Notes from review.**
-"No idea" is too pessimistic. The math is in `CLAUDE.md §2.2` — it's just arithmetic:
+"No idea" is too pessimistic. It's just arithmetic:
 
 ```
 KV cache size = 2 × L × H × head_dim × T × bytes_per_element
@@ -46,7 +46,7 @@ The leading 2 is because both K and V are stored. The trailing 2 is bytes per fp
 
 **Why this matters:** this is *the* fact that unlocks intuition for long-context inference. Every serving system spends huge effort on cache management precisely because the cache dominates memory at long context. It also motivates architectural responses: Grouped-Query Attention (Llama-2 70B, Llama-3) shares K/V across query heads to shrink the cache; Multi-Latent Attention (DeepSeek) compresses it differently; sliding windows just throw old tokens away.
 
-> *Note: Claude initially claimed an "expected answer of ~8.6 GB" in the notebook reflection — that was wrong, and a violation of `CLAUDE.md §10` (verify everything quantitative). The correct number is ~2.0 GB. Worth keeping in mind: trust the formula, not the asserted answer.*
+> *Note: an early reflection on this concept asserted an "expected answer of ~8.6 GB" — that was wrong. The correct number is ~2.0 GB. Trust the formula, not an asserted answer.*
 
 ---
 
@@ -97,6 +97,6 @@ Four named strategies the field uses:
 3. **Cache dominates weights at long context.** Crossover for 7B is around 27K tokens. At 100K context, cache is ~4× the model. This is why long-context inference is so memory-hungry.
 4. **Prefill is compute-bound; decode is memory-bandwidth-bound.** Decode benefits enormously from batching; prefill less so. This is half of what every serving system optimizes for.
 5. **Dropping cache tokens trades memory for forgetting.** Sliding window, attention sinks, score-based eviction, quantization — each has a different cost profile. The interesting research is in *which tokens are safe to drop* and *when*.
-6. **Verify quantitative claims before trusting them.** Even Claude's "expected answer" lines can be wrong. The formula is the ground truth.
+6. **Verify quantitative claims before trusting them.** "Expected answer" lines can be wrong; the formula is the ground truth.
 
 Next notebook: `02_attention_extraction.ipynb` — extracting attention weights by hand, building intuition for Phase 1's metric library.

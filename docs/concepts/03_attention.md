@@ -4,7 +4,7 @@
 > Format: my first-pass answer in my own words, then notes from review, then the cleaned answer.
 > Date: 2026-05-25.
 
-This is the one where the scaffold-before-answer pattern really kicked in. I started off mostly unsure on every question; Claude walked me through them by hinting rather than answering, and I wrote each final version myself. Preserving the first-pass attempts here is the point — they show where my intuition was *before* I had the concepts in hand, which is what makes the review notes useful.
+This is the one where the scaffold-before-answer pattern really kicked in. I started off mostly unsure on every question; the review process walked me through them by hinting rather than answering, and I wrote each final version myself. Preserving the first-pass attempts here is the point — they show where my intuition was *before* I had the concepts in hand, which is what makes the review notes useful.
 
 ---
 

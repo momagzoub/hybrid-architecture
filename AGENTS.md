@@ -1,6 +1,7 @@
-# CLAUDE.md — Hybrid Architecture
+# AGENTS.md — Hybrid Architecture
 
-> Project guide for Mohamed (`m0hamed@mit.edu`) and any Claude session that joins the project.
+> Project guide for Mohamed (`m0hamed@mit.edu`) and any engineer or coding
+> assistant joining the project.
 > Last refreshed: **2026-05-25** (Phase 2 close).
 
 This file is the front door. Read it first. The roadmap lives in
@@ -55,7 +56,7 @@ Our contribution lives upstream of all of these.
 
 ```
 hybrid-architecture/
-├── CLAUDE.md, README.md, PROJECT_PLAN.md
+├── AGENTS.md, README.md, PROJECT_PLAN.md
 ├── PHASE_3_HANDOFF.md                 ← next phase brief
 ├── pyproject.toml                     ← installable as `pip install -e ".[dev]"`
 ├── docs/results/                      ← atlas + CSVs + figures (tracked)
@@ -128,7 +129,7 @@ hybrid-architecture/
 
 ---
 
-## 8. How Claude should help
+## 8. How an assistant should help
 
 - **Mohamed has internalized the Phase 0-1 material.** The teach-everything
   mode is no longer warranted at every turn; explain LLM internals when they
@@ -153,4 +154,4 @@ This file gets updated when:
 - A convention turns out to be wrong (update §4).
 
 Small fixes go straight in. Big changes get committed with a message
-starting `CLAUDE.md:` so they're easy to find in `git log`.
+starting `AGENTS.md:` so they're easy to find in `git log`.
