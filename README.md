@@ -29,15 +29,19 @@ provides:
 
 The library is the artifact. The atlas is the proof it does something useful.
 
-## Headline findings (Phase 2, Pythia 70m-410m)
+## Headline findings (Pythia 70m-1b)
 
 | | |
 |---|---|
-| **Parallel-safety emerges between training step 128 and step 1000** across all three sizes; the curve barely moves over the next 142,000 steps. | [emergence curve](docs/results/figures/02_emergence_curve.png) |
-| **A logistic regression on per-(layer, head) features hits AUROC 0.845 ± 0.083** on Pythia-410m at the final checkpoint. The Phase 1 aggregate result was `\|r\| < 0.11` — the signal is real but the aggregation kills it. | [signature analysis](docs/results/figures/03_signature_auroc.png) |
+| **Parallel-safety emerges between training step 128 and step 1000** across three model sizes; the curve barely moves over the next 142,000 steps. | [emergence curve](docs/results/figures/02_emergence_curve.png) |
+| **Per-(layer, head) logistic regression hits AUROC 0.845 ± 0.083** on Pythia-410m at the final checkpoint; the Phase 1 aggregate result was `\|r\| < 0.11`. | [signature analysis](docs/results/figures/03_signature_auroc.png) |
 | **Code is 3.9× more parallel-safe than prose.** On Pythia-410m: WikiText psf = 0.115, GSM8K = 0.194, MBPP = **0.452**. | [domain shift](docs/results/figures/06_domain_shift_heatmap.png) |
+| **A 50 k-parameter MLP probe on Pythia-410m's L12 hidden state reaches AUROC 0.857** — middle layer wins, edges out the linear-on-attention baseline. | [probe by depth](docs/results/figures/07_probe_layer_depth.png) |
+| **But the probe does not predict real drafter-rejection.** In a Pythia-1b / 160m greedy spec-decode benchmark, `1 − top1` predicts rejection at AUROC 0.88; the offline probe lands at 0.60 (chance). Honest null. | [rejection ROC](docs/results/figures/08_drafter_rejection_roc.png) |
 
-Full atlas: [`docs/results/02_emergence_atlas.md`](docs/results/02_emergence_atlas.md).
+Atlases:
+- [Phase 2 emergence atlas](docs/results/02_emergence_atlas.md)
+- [Phase 3 probes + spec-decode benchmark](docs/results/03_probes.md)
 
 ## Install
 
@@ -70,6 +74,8 @@ python src/scripts/phase2_emergence_curve.py       # ~1 hr from scratch, ms from
 python src/scripts/phase2_signature_analysis.py    # ~10s
 python src/scripts/phase2_token_types.py           # ~2s
 python src/scripts/phase2_domain_shift.py          # ~5 min from scratch
+python src/scripts/phase3_layer_depth_sweep.py     # ~2 min, trains 42 probes
+python src/scripts/phase3_drafter_rejection.py     # ~15 min on CPU, needs Pythia-1b
 ```
 
 Every plot and CSV in `docs/results/` is regenerable from these four scripts and
@@ -103,8 +109,8 @@ cached pipeline anyone can run on Pythia checkpoints in minutes.
 
 ## Status
 
-Phase 2 complete (2026-05-25). Phase 3 next — see
-[`PHASE_3_HANDOFF.md`](PHASE_3_HANDOFF.md). Roadmap in
+Phases 2 and 3 complete (2026-05-25). Phase 4 (hybrid decoder demo) next —
+see [`PHASE_4_HANDOFF.md`](PHASE_4_HANDOFF.md). Roadmap in
 [`PROJECT_PLAN.md`](PROJECT_PLAN.md).
 
 ## License

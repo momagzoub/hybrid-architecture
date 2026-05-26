@@ -1,0 +1,5 @@
+predictor,auroc_reject,n_total,n_reject
+random,0.6041666666666666,64,28
+next_token_entropy,0.8392857142857142,64,28
+1_minus_top1,0.8839285714285714,64,28
+probe_L9,0.6031746031746031,64,28

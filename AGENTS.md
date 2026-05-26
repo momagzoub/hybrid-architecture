@@ -114,8 +114,8 @@ hybrid-architecture/
 | 0 — Foundations | ✅ closed | Decode-from-scratch + KV cache walkthrough. |
 | 1 — Measure | ✅ closed (2026-05-25) | Five metrics, NaN-free attention. |
 | 2 — Patterns | ✅ closed (2026-05-25) | [Atlas](./docs/results/02_emergence_atlas.md). AUROC 0.85 on 410m; code 3.9× more parallel-safe than prose. |
-| 3 — Probes & router | ⏭ next | See [`PHASE_3_HANDOFF.md`](./PHASE_3_HANDOFF.md). |
-| 4 — Hybrid decoder demo | pending | Phase 4 has natural parallel work — feature interpretation, measurement harness, "what we'd need to scale" writeup are mostly independent. |
+| 3 — Probes & router | ✅ closed (2026-05-25) | [Probes](./docs/results/03_probes.md). 410m L12 probe AUROC 0.857; offline probe does NOT transfer to spec-decode rejection (1−top1 wins at 0.88). |
+| 4 — Hybrid decoder demo | ⏭ next | See [`PHASE_4_HANDOFF.md`](./PHASE_4_HANDOFF.md). Natural parallel work — router, measurement harness, "what we'd need to scale" writeup are independent. |
 | 5 — Polish & publish | pending | |
 
 ---

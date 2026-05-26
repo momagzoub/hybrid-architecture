@@ -1,0 +1,17 @@
+{
+  "accept_rate": 0.5625,
+  "csv": "docs/results/08_drafter_rejection.csv",
+  "draft_k": 4,
+  "drafter": "EleutherAI/pythia-160m",
+  "experiment": "Phase 3 Step 4 \u2014 drafter-rejection prediction",
+  "figure": "docs/results/figures/08_drafter_rejection_roc.png",
+  "n_accepted": 36,
+  "n_drafted": 64,
+  "n_steps": 16,
+  "probe_checkpoint": "src/hybrid_arch/probe_checkpoints/160m_step143000_L9.pt",
+  "probe_layer": 9,
+  "prompt_tokens": 96,
+  "slice_sha256": "91d9df26eb3c3649ce446aa6b3533124a2d83beb1dddede0fac44a21bcd1dcf9",
+  "step": 143000,
+  "target": "EleutherAI/pythia-1b"
+}

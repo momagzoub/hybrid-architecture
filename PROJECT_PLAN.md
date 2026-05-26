@@ -110,7 +110,19 @@ The atlas plot has a caption you'd be willing to staple to a workshop submission
 
 ---
 
-## Phase 3 — Probes & router (weeks 12-15)
+## Phase 3 — Probes & router (weeks 12-15) — **COMPLETE (2026-05-25)**
+
+**Outcome.** Two findings, one positive and one negative, both shipped in
+[`docs/results/03_probes.md`](./docs/results/03_probes.md). Positive: a 50k-parameter MLP probe on
+Pythia-410m's L12 hidden state reaches 5-fold CV AUROC 0.857 — the middle
+layer carries the parallel-safety signal, beating the Phase 2
+linear-on-attention baseline (0.845). 42 trained probes shipped under
+`src/hybrid_arch/probe_checkpoints/`. Negative: in a greedy speculative-
+decoding benchmark (Pythia-1b target / Pythia-160m drafter, 64 drafted
+positions), the offline probe predicts rejection at AUROC 0.60 (chance);
+simple drafter-side baselines clear AUROC 0.84 (`entropy`) and 0.88
+(`1 − top1`). The probe is a strong offline diagnostic but a poor online
+router on its own. Phase 4's job is to take that fact seriously.
 
 **Goal:** turn the analysis into something you can call from code.
 
