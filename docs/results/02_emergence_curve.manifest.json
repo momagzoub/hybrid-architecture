@@ -1,0 +1,31 @@
+{
+  "agreement_aggregation": "fraction of positions with mean(agreement[j=1..k-1]) >= threshold",
+  "csv": "docs/results/02_emergence_curve.csv",
+  "dataset": "wikitext",
+  "experiment": "Phase 2 Step 4 \u2014 emergence curve",
+  "figure": "docs/results/figures/02_emergence_curve.png",
+  "k_parallel": 4,
+  "n_tokens": 256,
+  "parallel_safety_threshold": 0.9,
+  "sizes": [
+    "70m",
+    "160m",
+    "410m"
+  ],
+  "slice_path": "data/dataset_slices/wikitext_slice_256.pt",
+  "slice_sha256": "466472a2308482ac501cb3ac940c5766ba8862bf2f85cc0fe3b54b5b1e47e0fc",
+  "steps": [
+    0,
+    1,
+    8,
+    128,
+    1000,
+    4000,
+    16000,
+    32000,
+    64000,
+    96000,
+    128000,
+    143000
+  ]
+}
