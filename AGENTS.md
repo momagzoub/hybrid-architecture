@@ -4,8 +4,7 @@
 > assistant joining the project.
 > Last refreshed: **2026-05-25** (Phase 2 close).
 
-This file is the front door. Read it first. The roadmap lives in
-[`PROJECT_PLAN.md`](./PROJECT_PLAN.md); the results in
+This file is the front door. Read it first. The results live in
 [`docs/results/`](./docs/results/) (atlases 02-04) and the distilled story in
 [`docs/blog/parallelism-emerges.md`](./docs/blog/parallelism-emerges.md).
 
@@ -56,7 +55,7 @@ Our contribution lives upstream of all of these.
 
 ```
 hybrid-architecture/
-├── AGENTS.md, README.md, PROJECT_PLAN.md
+├── AGENTS.md, README.md
 ├── pyproject.toml                     ← installable as `pip install -e ".[dev]"`
 ├── docs/blog/                         ← the distilled blog post
 ├── docs/lab_notes.md                  ← concepts + full bug log
@@ -117,7 +116,7 @@ hybrid-architecture/
 | 2 — Patterns | ✅ closed (2026-05-25) | [Atlas](./docs/results/02_emergence_atlas.md). AUROC 0.85 on 410m; code 3.9× more parallel-safe than prose. |
 | 3 — Probes & router | ✅ closed (2026-05-25) | [Probes](./docs/results/03_probes.md). 410m L12 probe AUROC 0.857; offline probe does NOT transfer to spec-decode rejection (1−top1 wins at 0.88). |
 | 4 — Hybrid decoder demo | ✅ closed (2026-05-25) | [Hybrid decoder](./docs/results/04_hybrid_decoder.md). Router fitted on real labels doesn't beat `1−top1` (0.985); hybrid routes 27-72% of tokens at ≤3.3% quality cost. |
-| 5 — Polish & publish | ⏭ next | Blog post + short README shipped; workshop submission optional. See [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) §Phase 5. |
+| 5 — Polish & publish | ⏭ next | Blog post + short README shipped; workshop submission optional. |
 
 ---
 
