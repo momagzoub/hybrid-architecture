@@ -48,12 +48,8 @@ tests/             107 tests — metric correctness, cache, NaN-free attention, 
 
 ## Relation to prior work
 
-Upstream of — not competitive with — [EAGLE-3](https://arxiv.org/html/2503.01840v1),
+Upstream of [EAGLE-3](https://arxiv.org/html/2503.01840v1),
 [Mixture-of-Recursions](https://arxiv.org/abs/2507.10524), and
 [Mixture-of-Depths](https://arxiv.org/pdf/2404.02258). Those systems consume a per-token
-difficulty signal; this repo characterizes one, shows when it emerges, and reports honestly
+difficulty signal; this repo characterizes one, shows when it emerges, and reports
 where it does and doesn't pay off.
-
-## License
-
-MIT · [Mohamed Magzoub](mailto:m0hamed@mit.edu) · [github.com/momagzoub](https://github.com/momagzoub)
