@@ -15,6 +15,13 @@ __version__ = "0.3.0"
 from hybrid_arch.attention import extract_attention, extract_hidden_states
 from hybrid_arch.cache import metric_battery, slice_hash
 from hybrid_arch.checkpoints import list_checkpoints, load_pythia
+from hybrid_arch.hybrid import (
+    HybridDecodeResult,
+    Router,
+    hybrid_decode,
+    threshold_router,
+    weighted_router,
+)
 from hybrid_arch.metrics import (
     aggregate_attention_concentration,
     aggregate_attention_entropy,
@@ -32,6 +39,7 @@ from hybrid_arch.probes import (
     save_probe,
     train_probe,
 )
+from hybrid_arch.spec_decode import SpecDecodeTrace, spec_decode_capture
 from hybrid_arch.viz import attention_track, entropy_heatmap
 
 __all__ = [
@@ -57,5 +65,12 @@ __all__ = [
     "cross_val_auroc",
     "save_probe",
     "load_probe",
+    "SpecDecodeTrace",
+    "spec_decode_capture",
+    "HybridDecodeResult",
+    "Router",
+    "hybrid_decode",
+    "threshold_router",
+    "weighted_router",
 ]
 
