@@ -59,8 +59,10 @@ def load_pythia(
             name resolves to "EleutherAI/pythia-{size}".
         step: training step. Must be a valid Pythia revision; common
             choices are in `CANONICAL_STEPS`.
-        dtype: model dtype. Default fp32 to avoid the deep-layer attention
-            NaN bug — see `docs/concepts/03_attention.md`.
+        dtype: model dtype. Default fp32. Half-precision triggers a softmax
+            overflow in Pythia's deep attention layers; the forward-hook
+            extractor in `attention.py` works around it for analysis, but
+            generation still benefits from fp32.
 
     Returns:
         `(model, tokenizer)`. The model is in `eval()` mode and on CPU.

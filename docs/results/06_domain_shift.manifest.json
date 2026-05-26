@@ -1,0 +1,24 @@
+{
+  "csv": "docs/results/06_domain_shift.csv",
+  "datasets": [
+    "wikitext",
+    "mbpp",
+    "gsm8k"
+  ],
+  "experiment": "Phase 2 Step 7 \u2014 domain shift",
+  "figure": "docs/results/figures/06_domain_shift_heatmap.png",
+  "k_parallel": 4,
+  "n_tokens": 256,
+  "sizes": [
+    "70m",
+    "160m",
+    "410m"
+  ],
+  "slice_sha256_by_dataset": {
+    "gsm8k": "0bbcbbd5d690bdc7e1960ed86286dd11918231b3eba371df89114bacf2f4e0c5",
+    "mbpp": "d69ba29f800441a9ac0a6fd89286066ae563274d302829eb6af0a17540b599f1",
+    "wikitext": "466472a2308482ac501cb3ac940c5766ba8862bf2f85cc0fe3b54b5b1e47e0fc"
+  },
+  "step": 143000,
+  "threshold": 0.9
+}

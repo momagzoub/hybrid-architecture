@@ -77,7 +77,9 @@ You can take any (model, dataset) pair and produce a per-token annotated CSV wit
 
 ---
 
-## Phase 2 — Patterns (weeks 8-11)
+## Phase 2 — Patterns (weeks 8-11) — **COMPLETE (2026-05-25)**
+
+**Outcome.** The atlas at [`docs/results/02_emergence_atlas.md`](./docs/results/02_emergence_atlas.md) lands four results: (1) parallel-safety emerges between training steps 128 and 1000 across all three Pythia sizes and barely moves afterwards; (2) the Phase 1 aggregate-attention null is resolved by per-(layer, head) logistic regression, which hits AUROC 0.845 ± 0.083 on Pythia-410m at the final checkpoint; (3) MBPP code is 3.9× more parallel-safe than WikiText on Pythia-410m (psf 0.452 vs 0.115), with GSM8K math in between; (4) content words show *higher* parallel-safety than function words at every size, a counterintuitive finding worth re-examining at `k=1`. All compute flows through the new `metric_battery` cache layer, making the full sweep re-derivable from `data/cache/` in milliseconds.
 
 **Goal:** the analytical heart of the project. Find the structure that nobody else has the checkpoints to find.
 
@@ -144,7 +146,7 @@ You can hand the probe to someone and they can use it in 5 lines of code.
 You will probably *not* beat the existing `.generate()` on raw throughput. That's fine — your model is 160M, and PyTorch's overhead dominates. What you *can* show: the probe correctly identifies the right fraction of parallel-safe tokens, and on a controlled synthetic benchmark, the hybrid decoder matches the predicted speedup.
 
 ### Phase deliverable
-- `notebooks/05_hybrid_decoder.ipynb` — end-to-end demo. Generates a paragraph, color-coded by routing decision.
+- `src/scripts/phase4_hybrid_decoder.py` — end-to-end demo. Generates a paragraph, color-coded by routing decision.
 - A short writeup: "what we'd need to make this beat SOTA at scale" — honest list of the engineering work (CUDA kernels, batched scheduling, KV cache surgery) you'd need to actually compete.
 
 ### Compute

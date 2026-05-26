@@ -1,0 +1,26 @@
+{
+  "categories": [
+    "function",
+    "content",
+    "number",
+    "punct",
+    "fragment"
+  ],
+  "category_counts": {
+    "content": 140,
+    "fragment": 13,
+    "function": 56,
+    "number": 5,
+    "punct": 38
+  },
+  "csv": "docs/results/05_token_type_breakdown.csv",
+  "dataset": "wikitext",
+  "experiment": "Phase 2 Step 6 \u2014 token-type breakdown",
+  "figure": "docs/results/figures/05_token_type_breakdown.png",
+  "function_word_list_size": 94,
+  "k_parallel": 4,
+  "n_positions": 252,
+  "n_tokens": 256,
+  "slice_sha256": "466472a2308482ac501cb3ac940c5766ba8862bf2f85cc0fe3b54b5b1e47e0fc",
+  "threshold": 0.9
+}

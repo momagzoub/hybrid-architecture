@@ -4,7 +4,7 @@ The framework's `output_attentions=True` path returns NaN in Pythia's deeper
 layers (typically 9-11) because the unfused softmax overflows: residual-stream
 magnitudes grow with depth, so `exp(Q @ K^T)` overflows in fp16/bf16, and
 `inf - inf` poisons the masked-position softmax. Both eager and SDPA paths
-inherit this. See `docs/concepts/03_attention.md`.
+inherit this.
 
 The fix here is to capture each attention layer's inputs via a forward
 pre-hook, replay the QKV projection and rotary embedding using the layer's

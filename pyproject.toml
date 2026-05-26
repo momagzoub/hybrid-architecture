@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hybrid-arch"
-version = "0.0.1"
+version = "0.2.0"
 description = "Diagnostic toolkit for adaptive LLM inference research"
 requires-python = ">=3.10"
 dependencies = [
@@ -13,6 +13,7 @@ dependencies = [
     "datasets>=2.14",
     "numpy>=1.24",
     "matplotlib>=3.7",
+    "scikit-learn>=1.4",
 ]
 
 [project.optional-dependencies]
