@@ -40,10 +40,14 @@ The library is the artifact. The atlas is the proof it does something useful.
 | **But the probe does not predict real drafter-rejection.** In a Pythia-1b / 160m greedy spec-decode benchmark, `1 − top1` predicts rejection at AUROC 0.88; the offline probe lands at 0.60 (chance). Honest null. | [rejection ROC](docs/results/figures/08_drafter_rejection_roc.png) |
 | **A hybrid decoder routes 27-72% of tokens through the cheap path at ≤3.3% quality cost** — routing fraction tracks domain predictability (prose < code < math). Even *fitted* on real labels, the probe adds nothing over `1 − top1` (0.985). | [throughput](docs/results/figures/10_hybrid_throughput.png) |
 
-Atlases:
+**Read the story:** [**Parallelism Emerges** — the blog post](docs/blog/parallelism-emerges.md) distills all four findings in ~10 minutes.
+
+Per-phase atlases (the detailed writeups):
 - [Phase 2 emergence atlas](docs/results/02_emergence_atlas.md)
 - [Phase 3 probes + spec-decode benchmark](docs/results/03_probes.md)
 - [Phase 4 hybrid decoder](docs/results/04_hybrid_decoder.md)
+
+Engineering notes and the full bug log: [`docs/lab_notes.md`](docs/lab_notes.md).
 
 ## Install
 

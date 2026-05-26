@@ -19,7 +19,7 @@ post is a distillation of them, not a new document.
 ```
 hybrid-architecture/   (v0.4.0, 107 tests, CI green on 3.10 + 3.12)
 ├── README.md, AGENTS.md, PROJECT_PLAN.md
-├── PHASE_3_HANDOFF.md, PHASE_4_HANDOFF.md, PHASE_5_HANDOFF.md
+├── PHASE_5_HANDOFF.md
 ├── docs/results/
 │   ├── 02_emergence_atlas.md     ← Phase 2
 │   ├── 03_probes.md              ← Phase 3

@@ -24,7 +24,7 @@ The phases are not equal in difficulty. Phase 0 is mostly learning. Phase 2 is t
 - `src/hybrid_arch/decoding.py` — extract the loop into a clean function with type hints.
 
 ### Phase deliverable
-A short writeup (`docs/concepts/01_decoding_basics.md`) explaining autoregressive decoding and KV caching *in your own words*, with a plot you generated. Audience: a smart friend who knows Python but not ML.
+A short writeup explaining autoregressive decoding and KV caching *in your own words* (now consolidated into [`docs/lab_notes.md`](./docs/lab_notes.md) §1). Audience: a smart friend who knows Python but not ML.
 
 ### Compute
 Negligible. T4 once or twice for the wall-clock comparison.

@@ -5,9 +5,10 @@
 > Last refreshed: **2026-05-25** (Phase 2 close).
 
 This file is the front door. Read it first. The roadmap lives in
-[`PROJECT_PLAN.md`](./PROJECT_PLAN.md); the Phase 2 results in
-[`docs/results/02_emergence_atlas.md`](./docs/results/02_emergence_atlas.md);
-the Phase 3 brief in [`PHASE_3_HANDOFF.md`](./PHASE_3_HANDOFF.md).
+[`PROJECT_PLAN.md`](./PROJECT_PLAN.md); the results in
+[`docs/results/`](./docs/results/) (atlases 02-04) and the distilled story in
+[`docs/blog/parallelism-emerges.md`](./docs/blog/parallelism-emerges.md); the
+next-phase brief in [`PHASE_5_HANDOFF.md`](./PHASE_5_HANDOFF.md).
 
 ---
 
@@ -57,9 +58,11 @@ Our contribution lives upstream of all of these.
 ```
 hybrid-architecture/
 ├── AGENTS.md, README.md, PROJECT_PLAN.md
-├── PHASE_3_HANDOFF.md                 ← next phase brief
+├── PHASE_5_HANDOFF.md                 ← next phase brief
 ├── pyproject.toml                     ← installable as `pip install -e ".[dev]"`
-├── docs/results/                      ← atlas + CSVs + figures (tracked)
+├── docs/blog/                         ← the distilled blog post
+├── docs/lab_notes.md                  ← concepts + full bug log
+├── docs/results/                      ← atlases + CSVs + figures (tracked)
 ├── src/hybrid_arch/                   ← importable library
 │   ├── attention.py, cache.py, checkpoints.py, metrics.py, viz.py
 ├── src/scripts/                       ← phase{N}_*.py sweep runners
