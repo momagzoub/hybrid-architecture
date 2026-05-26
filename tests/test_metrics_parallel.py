@@ -19,7 +19,6 @@ from torch import nn
 
 from hybrid_arch.metrics import parallel_prediction_agreement
 
-
 # ---------- stub models ----------
 
 

@@ -23,7 +23,6 @@ import torch
 
 from hybrid_arch.cache import metric_battery, slice_hash
 
-
 # ---------- slice_hash ----------
 
 def test_slice_hash_deterministic():
@@ -137,7 +136,8 @@ def test_force_recompute_overwrites(pythia_model_and_tokenizer, tiny_input_ids, 
     original_mtime = cached_path.stat().st_mtime_ns
 
     # Bump mtime artificially backwards so we can detect a rewrite.
-    import os, time
+    import os
+    import time
     time.sleep(0.01)
     os.utime(cached_path, ns=(original_mtime - 1_000_000_000, original_mtime - 1_000_000_000))
 

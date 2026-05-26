@@ -1,5 +1,9 @@
 # hybrid-arch
 
+[![CI](https://github.com/momagzoub/hybrid-architecture/actions/workflows/ci.yml/badge.svg)](https://github.com/momagzoub/hybrid-architecture/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A diagnostic toolkit and an attention-pattern atlas for adaptive LLM inference research.
 
 ![Emergence curve](docs/results/figures/02_emergence_curve.png)

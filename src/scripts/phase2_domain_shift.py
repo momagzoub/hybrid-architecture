@@ -26,7 +26,6 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from hybrid_arch import load_pythia, metric_battery, slice_hash  # noqa: E402
 
-
 SIZES = ("70m", "160m", "410m")
 DATASETS = ("wikitext", "mbpp", "gsm8k")
 STEP = 143000
@@ -63,10 +62,12 @@ def get_slice(name: str, tok) -> torch.Tensor:
         return torch.load(path, weights_only=False)
     pieces, chars = [], 0
     for txt in STREAMS[name]():
-        pieces.append(txt); chars += len(txt)
+        pieces.append(txt)
+        chars += len(txt)
         if chars > N_TOKENS * 8:
             break
-    ids = tok(" ".join(pieces), return_tensors="pt", truncation=False).input_ids[:, :N_TOKENS].contiguous()
+    enc = tok(" ".join(pieces), return_tensors="pt", truncation=False)
+    ids = enc.input_ids[:, :N_TOKENS].contiguous()
     if ids.shape[1] < N_TOKENS:
         raise RuntimeError(f"{name} yielded only {ids.shape[1]} tokens")
     torch.save(ids, path)
@@ -115,7 +116,11 @@ def main():
                 model=model, tokenizer_name="EleutherAI/pythia-160m",
             )
             tag = "HIT" if cache_hit else "MISS"
-            print(f"  size={size} ds={ds:8s} {tag} {time.time()-t0:5.1f}s  psf={psf(out['parallel_agreement']):.3f}")
+            pa = out["parallel_agreement"]
+            print(
+                f"  size={size} ds={ds:8s} {tag} {time.time()-t0:5.1f}s "
+                f"psf={psf(pa):.3f}"
+            )
             rows.append({
                 "size": size, "dataset": ds, "step": STEP,
                 "parallel_safety_fraction": psf(out["parallel_agreement"]),
@@ -128,7 +133,8 @@ def main():
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
     with CSV_PATH.open("w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
-        w.writeheader(); w.writerows(rows)
+        w.writeheader()
+        w.writerows(rows)
 
     # 3x3 heatmap (size, domain → psf).
     M = np.zeros((len(SIZES), len(DATASETS)))

@@ -31,7 +31,6 @@ sys.path.insert(0, str(_REPO_ROOT / "src"))
 
 from hybrid_arch import list_checkpoints, metric_battery, slice_hash  # noqa: E402
 
-
 SIZES = ("70m", "160m", "410m")
 DATASET = "wikitext"
 N_TOKENS = 256
@@ -136,7 +135,8 @@ def run() -> None:
             for cat in CATEGORIES:
                 mask = cat_array == cat
                 if mask.sum() == 0:
-                    psf = float("nan"); n = 0
+                    psf = float("nan")
+                    n = 0
                 else:
                     psf = float(safe[mask].mean())
                     n = int(mask.sum())
@@ -148,7 +148,8 @@ def run() -> None:
     CSV_PATH.parent.mkdir(parents=True, exist_ok=True)
     with CSV_PATH.open("w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
-        w.writeheader(); w.writerows(rows)
+        w.writeheader()
+        w.writerows(rows)
 
     MANIFEST_PATH.write_text(json.dumps({
         "experiment": "Phase 2 Step 6 — token-type breakdown",

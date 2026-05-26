@@ -13,7 +13,6 @@ import torch
 
 from hybrid_arch.metrics import next_token_entropy, top1_probability
 
-
 # ---------- next_token_entropy ----------
 
 def test_entropy_uniform_distribution():

@@ -10,12 +10,10 @@ from __future__ import annotations
 
 import math
 
-import pytest
 import torch
 
 from hybrid_arch.checkpoints import CANONICAL_STEPS, list_checkpoints, load_pythia
 from hybrid_arch.metrics import next_token_entropy
-
 
 # ---------- list_checkpoints ----------
 

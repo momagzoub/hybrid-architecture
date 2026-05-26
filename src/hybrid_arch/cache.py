@@ -41,7 +41,6 @@ from hybrid_arch.metrics import (
     top1_probability,
 )
 
-
 DEFAULT_TOP_K = (1, 3, 5)
 DEFAULT_K_PARALLEL = 4
 

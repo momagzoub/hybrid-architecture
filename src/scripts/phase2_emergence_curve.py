@@ -37,7 +37,6 @@ import time
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 import torch
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -50,7 +49,6 @@ from hybrid_arch import (  # noqa: E402
     slice_hash,
 )
 from hybrid_arch.viz import STYLE  # noqa: E402
-
 
 SIZES = ("70m", "160m", "410m")
 DATASET = "wikitext"
@@ -148,7 +146,9 @@ def write_manifest(input_ids: torch.Tensor) -> None:
         "parallel_safety_threshold": PARALLEL_SAFETY_THRESHOLD,
         "slice_sha256": slice_hash(input_ids),
         "slice_path": str(SLICE_PATH.relative_to(_REPO_ROOT)),
-        "agreement_aggregation": "fraction of positions with mean(agreement[j=1..k-1]) >= threshold",
+        "agreement_aggregation": (
+            "fraction of positions with mean(agreement[j=1..k-1]) >= threshold"
+        ),
         "csv": str(CSV_PATH.relative_to(_REPO_ROOT)),
         "figure": str(FIGURE_PATH.relative_to(_REPO_ROOT)),
     }

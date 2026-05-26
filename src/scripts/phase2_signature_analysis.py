@@ -87,7 +87,6 @@ def build_features(out: dict[str, torch.Tensor]) -> tuple[np.ndarray, list[str]]
     attn_ent = out["attention_entropy_per_head"][:, 0].numpy()  # [L, H, S]
     attn_conc = out["attention_concentration_per_head"][:, :, 0].numpy()  # [K, L, H, S]
 
-    S = nte.shape[0]
     L, H = attn_ent.shape[:2]
     K = attn_conc.shape[0]
 
@@ -279,7 +278,8 @@ def run() -> None:
     for ax, size in zip(axes, SIZES):
         feats = final_features.get(size, [])
         if not feats:
-            ax.set_title(f"Pythia-{size} — no data"); continue
+            ax.set_title(f"Pythia-{size} — no data")
+            continue
         ys = list(range(len(feats)))[::-1]
         coefs = [c for _, c in feats]
         labels = [n for n, _ in feats]
