@@ -1,0 +1,14 @@
+{
+  "cv_auroc_mean": 0.8522390572390572,
+  "cv_auroc_std": 0.08644917364730198,
+  "dataset": "wikitext",
+  "hidden_dim": 1024,
+  "layer": 10,
+  "mlp_dim": 32,
+  "model_size": "410m",
+  "n_train": 201,
+  "n_val": 50,
+  "parameter_count": 35393,
+  "step": 143000,
+  "val_auroc": 0.9772727272727273
+}

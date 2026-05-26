@@ -1,0 +1,20 @@
+{
+  "csv": "docs/results/07_probe_layer_depth.csv",
+  "dataset": "wikitext",
+  "experiment": "Phase 3 Step 3 \u2014 probe AUROC vs layer depth",
+  "figure": "docs/results/figures/07_probe_layer_depth.png",
+  "k_parallel": 4,
+  "n_folds": 5,
+  "n_tokens": 256,
+  "probe_arch": "LayerProbe(mlp_dim=32)",
+  "probe_checkpoint_dir": "src/hybrid_arch/probe_checkpoints",
+  "sizes": [
+    "70m",
+    "160m",
+    "410m"
+  ],
+  "slice_sha256": "466472a2308482ac501cb3ac940c5766ba8862bf2f85cc0fe3b54b5b1e47e0fc",
+  "step": 143000,
+  "threshold": 0.9,
+  "trainer": "Adam lr=1e-2 wd=1e-3 patience=20 max_epochs=200"
+}
