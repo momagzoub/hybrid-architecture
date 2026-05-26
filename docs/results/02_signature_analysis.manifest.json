@@ -1,0 +1,26 @@
+{
+  "csv_auroc": "docs/results/03_signature_auroc.csv",
+  "csv_top_features": "docs/results/04_top_features.csv",
+  "dataset": "wikitext",
+  "experiment": "Phase 2 Step 5 \u2014 signature analysis",
+  "feature_groups": [
+    "next_token_entropy",
+    "top1_probability",
+    "attn_ent_L{l}_H{h}",
+    "attn_conc_top{1,3,5}_L{l}_H{h}"
+  ],
+  "feature_standardisation": "per-fold StandardScaler",
+  "figure_auroc": "docs/results/figures/03_signature_auroc.png",
+  "figure_top_features": "docs/results/figures/04_top_features.png",
+  "k_parallel": 4,
+  "model": "LogisticRegression(penalty=l2, C=1, class_weight=balanced, liblinear)",
+  "n_folds": 5,
+  "n_tokens": 256,
+  "sizes": [
+    "70m",
+    "160m",
+    "410m"
+  ],
+  "slice_sha256": "466472a2308482ac501cb3ac940c5766ba8862bf2f85cc0fe3b54b5b1e47e0fc",
+  "threshold": 0.9
+}

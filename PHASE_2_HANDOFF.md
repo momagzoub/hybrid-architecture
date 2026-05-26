@@ -108,8 +108,9 @@ Each step ends in something runnable. The first two steps from the previous vers
 - [x] Step 2 — per-(layer, head) attention already preserved by Phase 1 primitives; added `aggregate_attention_*` helpers + 7 explicit equivalence tests
 - [x] Step 3 — smoke verified on Pythia-70m and 410m @ step143000, 32 tokens, cache hit < 1ms
 - [x] Step 4 — emergence curve sweep complete; `docs/results/02_emergence_curve.{csv,manifest.json,figures/02_emergence_curve.png}`. Headline: parallel-safety emerges between step128 and step1000 across all sizes; 410m converges to psf≈0.115 vs 70m ≈0.05 (mild size scaling). 410m@step8 has a psf=0.405 outlier — pre-collapse degenerate prediction (model emits the same token everywhere); flag in writeup.
-- [ ] Step 5 — signature analysis: in progress
-- [ ] Steps 6-9 — pending
+- [x] Step 5 — signature analysis: **Phase 1 puzzle resolved.** Per-(layer, head) logistic regression hits AUROC 0.845 ± 0.083 on 410m@step143k vs aggregate r<0.11. Specific heads carry the signal that averaging washed out. `docs/results/03_signature_auroc.csv` + `04_top_features.csv` + figures. Top features dominated by *attention concentration* (negative coefs → less-concentrated heads predict parallel-safety) and `top1_probability` (positive — high confidence → parallel-safe). Phase 3 has something real to probe.
+- [ ] Step 6 — token-type breakdown: pending
+- [ ] Steps 7-9 — pending
 
 **Slice-size deviation from the original plan.** The handoff calls for a 2K-token WikiText slice, but the batched `parallel_prediction_agreement` at n_positions ≈ 2K would create activations of ~25 GB per layer on Pythia-410M (the kernel is one big `[n_positions, n_positions+j]` forward pass). That exceeds laptop RAM and is over the T4's 16 GB. Stepped down to 256 tokens to match the Phase 1 slice; statistical power per cell is 252 × (k-1) = 756 binary observations, ample for the fraction-≥-0.9 statistic. Document this in the atlas; revisit at 1K on T4 if the laptop sweep finishes with budget headroom.
 
