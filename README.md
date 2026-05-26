@@ -4,123 +4,56 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A diagnostic toolkit and an attention-pattern atlas for adaptive LLM inference research.
+A diagnostic toolkit for studying **parallel-safety** in language models — when, during
+pretraining, a model learns which tokens are easy enough to skip the full sequential decode.
 
 ![Emergence curve](docs/results/figures/02_emergence_curve.png)
 
-## What it does
+## Findings (Pythia 70m–1b, all reproducible)
 
-Speculative decoding, mixture-of-depths, and mixture-of-recursions all bet on
-the same observation: most tokens an LLM generates are not equally hard. The
-hard work in those systems is *deciding which tokens are easy*. This repo
-provides:
+- **Emerges early and abruptly** — between training steps 128 and 1000, then flat for 142k more.
+- **Predictable from per-(layer, head) attention** — AUROC 0.85 on Pythia-410m; the *aggregate* is noise (|r| < 0.11), the signal lives in specific heads, mid-network.
+- **Code ≫ prose** — 3.9× more parallel-safe on MBPP than WikiText.
+- **Honest null** — in real speculative decoding, the drafter's own `1 − top1` predicts rejections at AUROC 0.88; a learned probe adds nothing, even fitted on the labels.
 
-- A clean, NaN-free per-(layer, head) attention extractor for the GPTNeoX
-  family.
-- Five per-token metrics (next-token entropy, top-1 probability, per-head
-  attention entropy, per-head attention concentration, and an offline
-  speculative-decoding-style **parallel agreement** statistic) with batched
-  implementations.
-- An on-disk cache keyed by `(model_size, training_step, dataset_slice_hash)`
-  so a 36-cell sweep across Pythia training checkpoints reruns in milliseconds.
-- An empirical study of when in pretraining "parallel-safety" emerges, what
-  per-(layer, head) features predict it, and how that signal differs between
-  code, math, and prose.
+**→ Read the [blog post](docs/blog/parallelism-emerges.md)** for the full story (~10 min). Detailed writeups: [emergence](docs/results/02_emergence_atlas.md) · [probes](docs/results/03_probes.md) · [hybrid decoder](docs/results/04_hybrid_decoder.md).
 
-The library is the artifact. The atlas is the proof it does something useful.
-
-## Headline findings (Pythia 70m-1b)
-
-| | |
-|---|---|
-| **Parallel-safety emerges between training step 128 and step 1000** across three model sizes; the curve barely moves over the next 142,000 steps. | [emergence curve](docs/results/figures/02_emergence_curve.png) |
-| **Per-(layer, head) logistic regression hits AUROC 0.845 ± 0.083** on Pythia-410m at the final checkpoint; the Phase 1 aggregate result was `\|r\| < 0.11`. | [signature analysis](docs/results/figures/03_signature_auroc.png) |
-| **Code is 3.9× more parallel-safe than prose.** On Pythia-410m: WikiText psf = 0.115, GSM8K = 0.194, MBPP = **0.452**. | [domain shift](docs/results/figures/06_domain_shift_heatmap.png) |
-| **A 50 k-parameter MLP probe on Pythia-410m's L12 hidden state reaches AUROC 0.857** — middle layer wins, edges out the linear-on-attention baseline. | [probe by depth](docs/results/figures/07_probe_layer_depth.png) |
-| **But the probe does not predict real drafter-rejection.** In a Pythia-1b / 160m greedy spec-decode benchmark, `1 − top1` predicts rejection at AUROC 0.88; the offline probe lands at 0.60 (chance). Honest null. | [rejection ROC](docs/results/figures/08_drafter_rejection_roc.png) |
-| **A hybrid decoder routes 27-72% of tokens through the cheap path at ≤3.3% quality cost** — routing fraction tracks domain predictability (prose < code < math). Even *fitted* on real labels, the probe adds nothing over `1 − top1` (0.985). | [throughput](docs/results/figures/10_hybrid_throughput.png) |
-
-**Read the story:** [**Parallelism Emerges** — the blog post](docs/blog/parallelism-emerges.md) distills all four findings in ~10 minutes.
-
-Per-phase atlases (the detailed writeups):
-- [Phase 2 emergence atlas](docs/results/02_emergence_atlas.md)
-- [Phase 3 probes + spec-decode benchmark](docs/results/03_probes.md)
-- [Phase 4 hybrid decoder](docs/results/04_hybrid_decoder.md)
-
-Engineering notes and the full bug log: [`docs/lab_notes.md`](docs/lab_notes.md).
-
-## Install
+## Install & quickstart
 
 ```bash
 git clone https://github.com/momagzoub/hybrid-architecture.git
-cd hybrid-architecture
-pip install -e ".[dev]"
-pytest -q              # 81 tests, ~30s on CPU
+cd hybrid-architecture && pip install -e ".[dev]" && pytest -q
 ```
 
-Requires Python 3.10+. CPU-only is fine; a T4 helps for the 410m sweep.
-
-## Five-line quickstart
-
 ```python
-import torch
 from hybrid_arch import load_pythia, metric_battery
 
 model, tok = load_pythia("160m", step=143000)
 ids = tok("The quick brown fox jumps over the", return_tensors="pt").input_ids
 out = metric_battery("160m", 143000, "demo", ids, k_parallel=4, model=model)
-# `out` is a dict of per-token tensors, also cached to disk for free re-reads.
 print("parallel-safety rate:", out["parallel_agreement"][..., 1:].float().mean().item())
 ```
 
-## Reproducing the atlas
+Python 3.10+, CPU-only is fine. Every figure and CSV in `docs/results/` regenerates from
+the `src/scripts/phase*.py` runners (idempotent over an on-disk cache).
 
-```bash
-python src/scripts/phase2_emergence_curve.py       # ~1 hr from scratch, ms from cache
-python src/scripts/phase2_signature_analysis.py    # ~10s
-python src/scripts/phase2_token_types.py           # ~2s
-python src/scripts/phase2_domain_shift.py          # ~5 min from scratch
-python src/scripts/phase3_layer_depth_sweep.py     # ~2 min, trains 42 probes
-python src/scripts/phase3_drafter_rejection.py     # ~15 min on CPU, needs Pythia-1b
-python src/scripts/phase4_fitted_router.py         # ~7 min, fits the router ablations
-python src/scripts/phase4_hybrid_bench.py          # ~5 min, the hybrid-decoder bench
-```
-
-Every plot and CSV in `docs/results/` is regenerable from these four scripts and
-the cached metric batteries in `data/cache/`.
-
-## Repo layout
+## Layout
 
 ```
-src/hybrid_arch/      importable library — extract_attention, metric_battery,
-                      load_pythia, metrics, viz primitives
-src/scripts/          phase2_*.py sweep runners, all idempotent over the cache
-docs/results/         the atlas + CSV/JSON deliverables + publication figures
-tests/                pytest — covers metric correctness, cache hit/miss, NaN-
-                      free attention, per-head ↔ aggregate equivalence
+src/hybrid_arch/   library — attention extraction, metrics, cache, probes, hybrid decoder
+src/scripts/       phase{2,3,4}_*.py experiment runners
+docs/              blog post, result atlases + figures, lab notes (concepts + bug log)
+tests/             107 tests — metric correctness, cache, NaN-free attention, spec-decode exactness
 ```
 
 ## Relation to prior work
 
-Upstream of, not competitive with:
-
-- [EAGLE-3](https://arxiv.org/html/2503.01840v1) — speculative decoding with
-  0.75-0.85 acceptance, 3-6× speedup.
-- [Mixture-of-Recursions](https://arxiv.org/abs/2507.10524) — per-token
-  adaptive recursive depth.
-- [Mixture-of-Depths](https://arxiv.org/pdf/2404.02258) — per-token layer skipping.
-
-Those systems all consume some signal about per-token difficulty. This repo
-characterizes one such signal (parallel agreement), shows it emerges early in
-pretraining, finds the per-(layer, head) features that predict it, and ships a
-cached pipeline anyone can run on Pythia checkpoints in minutes.
-
-## Status
-
-Phases 2-4 complete (2026-05-25). Phase 5 (polish & publish) next —
-see [`PHASE_5_HANDOFF.md`](PHASE_5_HANDOFF.md). Roadmap in
-[`PROJECT_PLAN.md`](PROJECT_PLAN.md).
+Upstream of — not competitive with — [EAGLE-3](https://arxiv.org/html/2503.01840v1),
+[Mixture-of-Recursions](https://arxiv.org/abs/2507.10524), and
+[Mixture-of-Depths](https://arxiv.org/pdf/2404.02258). Those systems consume a per-token
+difficulty signal; this repo characterizes one, shows when it emerges, and reports honestly
+where it does and doesn't pay off.
 
 ## License
 
-MIT. Author: [Mohamed Magzoub](mailto:m0hamed@mit.edu) · [github.com/momagzoub](https://github.com/momagzoub).
+MIT · [Mohamed Magzoub](mailto:m0hamed@mit.edu) · [github.com/momagzoub](https://github.com/momagzoub)
