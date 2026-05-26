@@ -33,6 +33,8 @@ env/
 *.pth
 *.safetensors
 *.bin
+# Allow committed probe checkpoints — small (~50KB each), the shipping artifact.
+!src/hybrid_arch/probe_checkpoints/*.pt
 
 # HuggingFace cache
 .cache/
